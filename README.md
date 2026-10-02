@@ -40,6 +40,8 @@ You can watch it, or you can run it: approve, send back, pause, reset trust, or 
 
 There is also a command bar. Type "who needs me?", "where is Kite?" or "pause everything touching payments".
 
+The same base also runs live inside [my portfolio](https://murtuzabuilds.github.io/#outpost). There the crew looks after the site itself, the clock is the visitor's own, and real things a visitor does on the page, like opening a project or asking a question, arrive at the Inbox as tasks. The crew is still simulated.
+
 ## The rules
 
 When a person has to say yes is decided by four fixed rules, checked in this order. None of it is decided by a model.
@@ -86,10 +88,12 @@ Plain JavaScript. The engine in `src/` has no dependencies and knows nothing abo
 | `app/bots.js` | The bots: bodies, faces, hats and parcels |
 | `app/hud.js` | The panels, rendered from the same state as the 3D view |
 | `app/ask.js` | The command bar |
+| `app/embed.js` | Mounts the live base inside another page, in a shadow root so nothing collides |
+| `src/site.js` | A second workplace for the same crew: the bots that look after my portfolio site |
 
 ```bash
 npm install
-npm test        # 27 tests
+npm test        # 30 tests
 npm run eval    # the results table
 npm run build   # bundles everything into index.html
 npx serve .     # open the demo

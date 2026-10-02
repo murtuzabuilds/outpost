@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSim, statusOf, needsApproval, levelOf, nextLevel, canUse, CREW, byId, KINDS, CALM, makeTask, STATIONS, distance } from '../src/index.js';
+import { createSim, statusOf, needsApproval, levelOf, nextLevel, canUse, CREW, byId, KINDS, CALM, makeTask, STATIONS, distance, SITE_KINDS } from '../src/index.js';
 
 const run = (sim, secs, dt = 0.1) => { for (let i = 0; i < secs / dt; i++) sim.step(dt); };
 const r0 = () => 0.5;
@@ -211,4 +211,30 @@ test('finished work is pruned so a long session stays light', () => {
 test('stations are far enough apart to read', () => {
   const ids = Object.keys(STATIONS);
   for (const a of ids) for (const b of ids) if (a < b) assert.ok(distance(a, b) > 15, a + ' ' + b);
+});
+
+test('a second workplace can bring its own catalog without changing the rules', () => {
+  assert.deepEqual(SITE_KINDS.map(k => k.kind).sort(), KINDS.map(k => k.kind).sort());
+  for (const k of SITE_KINDS) { const base = KINDS.find(x => x.kind === k.kind); assert.equal(k.tool, base.tool); assert.deepEqual(k.risk, base.risk); }
+  const sim = createSim(3, { auto: false, kinds: SITE_KINDS });
+  const t = sim.dispatch('export'); run(sim, 60);
+  assert.equal(sim.state.tasks[t.id].title, "Send Murtuza's resume to a recruiter");
+  assert.equal(sim.state.tasks[t.id].approval.rule, 'data-out');
+  assert.equal(sim.state.tasks[t.id].approval.reason, 'This sends a file outside the site');
+  assert.deepEqual(sim.state.approvals, ['rook']);
+});
+
+test('work that comes from outside keeps its own title and is marked live', () => {
+  const sim = createSim(3, { auto: false, kinds: SITE_KINDS });
+  const t = sim.dispatch('summary', { title: 'Pull up CardRight for a visitor', from: 'page' }); run(sim, 60);
+  assert.equal(sim.state.tasks[t.id].title, 'Pull up CardRight for a visitor');
+  assert.equal(sim.state.tasks[t.id].status, 'done');
+  assert.ok(sim.state.log.some(l => l.kind === 'live' && l.text.includes('Pull up CardRight')));
+});
+
+test('a site bot reaching for private work is stopped with the site wording', () => {
+  const sim = createSim(3, { auto: false, kinds: SITE_KINDS });
+  sim.dispatch('broker', { reach: true }); run(sim, 60);
+  assert.equal(sim.state.incidents[0].what, 'private employer work');
+  assert.equal(sim.state.incidents[0].label, 'Private employer work');
 });

@@ -1,6 +1,6 @@
 // Outpost: glue between the simulation, the 3D base and the panels.
 import { T, col, clamp, smooth, damp } from './gfx.js';
-import { createSim, CREW, byId, STATIONS, RISKY } from '../src/index.js';
+import { createSim, CREW, byId, STATIONS, RISKY, SITE_KINDS, SITE_CREW, SITE_WORDS } from '../src/index.js';
 import { buildWorld } from './world3d.js';
 import { makeBot, makeParcel } from './bots.js';
 import { makeFx } from './fx.js';
@@ -8,11 +8,14 @@ import { makeSound } from './sound.js';
 import { ask } from './ask.js';
 import * as hud from './hud.js';
 
-const $ = s => document.querySelector(s);
-
-function boot() {
-  const app = $('#app'), canvas = $('#gl');
-  const fail = () => { $('#fail').hidden = false; };
+// `root` is where the markup lives: the document for the full page, or a shadow root when the
+// base is mounted inside another site. `opts.embed` trims the panels and stops the scene from
+// hijacking the host page's scrolling.
+export function boot(root = document, opts = {}) {
+  const $ = s => root.querySelector(s);
+  const app = $('#app'), canvas = $('#gl'), embed = !!opts.embed;
+  if (embed) app.classList.add('embed');
+  const fail = () => { $('#fail').hidden = false; if (opts.onFail) opts.onFail(); };
   if (!T) return fail();
   let renderer;
   try { renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch (e) { return fail(); }
@@ -43,21 +46,37 @@ function boot() {
     controls.screenSpacePanning = false; controls.panSpeed = 1;
     controls.mouseButtons = { LEFT: T.MOUSE.PAN, MIDDLE: T.MOUSE.DOLLY, RIGHT: T.MOUSE.ROTATE };
     controls.touches = { ONE: T.TOUCH.PAN, TWO: T.TOUCH.DOLLY_ROTATE };
+    if (embed) {                                    // the host page keeps its scroll: no wheel zoom, and touch is for tapping only
+      controls.enableZoom = false;
+      if (matchMedia('(pointer: coarse)').matches) controls.enabled = false;
+      canvas.style.touchAction = 'pan-y';
+      canvas.addEventListener('wheel', e => { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12); }, { passive: false });
+    }
     controls.update();
   }
+  const zoomBy = k => { cam.zoom = clamp(cam.zoom * k, 0.55, 5); cam.updateProjectionMatrix(); };
   const target = () => controls ? controls.target : HOME;
   const shift = d => { target().add(d); cam.position.add(d); };
 
   let Wd = 1, Hd = 1, camYaw = Math.PI / 4, edgeTop = 74, edgeBot = 126;
   function resize() {
     Wd = app.clientWidth; Hd = app.clientHeight; renderer.setSize(Wd, Hd, false);
-    edgeTop = Wd <= 700 ? 104 : 74; edgeBot = Wd <= 700 ? 196 : 126;
-    const aspect = Wd / Hd, small = Wd <= 700, vh = Math.max(100, (small ? 112 : 160) / aspect);
+    if (!Wd || !Hd) return;
+    const aspect = Wd / Hd, small = Wd <= 700;
+    edgeTop = embed ? 8 : small ? 104 : 74; edgeBot = embed ? 62 : small ? 196 : 126;
+    // In an embed the host page may keep words over the top of the scene; `inset` is that height,
+    // and the base is fitted and centred in what is left below it.
+    const inset = embed ? Math.min(Hd * 0.5, (opts.topInset && opts.topInset()) || (small ? 150 : 0)) : 0, free = Hd - inset;   // on a phone the alert card sits at the top
+    app.style.setProperty('--inset', inset + 'px');
+    const vh = (embed ? Math.max(104, (small ? 118 : 168) / (Wd / free)) : Math.max(100, (small ? 112 : 160) / aspect)) * Hd / free;
     cam.left = -vh * aspect / 2; cam.right = vh * aspect / 2; cam.top = vh / 2; cam.bottom = -vh / 2;
-    if (small) cam.setViewOffset(Wd, Hd, 0, -Hd * 0.04, Wd, Hd); else cam.clearViewOffset();   // on a phone, lift the scene clear of the bottom bar
+    if (inset) cam.setViewOffset(Wd, Hd, 0, -inset / 2 + (small ? 0 : 14), Wd, Hd);
+    else if (small && !embed) cam.setViewOffset(Wd, Hd, 0, -Hd * 0.04, Wd, Hd);     // on a phone, sit clear of the bottom bar
+    else cam.clearViewOffset();
     cam.updateProjectionMatrix();
   }
   if (window.ResizeObserver) new ResizeObserver(resize).observe(app); else addEventListener('resize', resize);
+  if (embed) addEventListener('resize', resize);
   resize();
 
   const W = buildWorld(scene), fx = makeFx(scene, reduce), sound = makeSound();
@@ -72,9 +91,13 @@ function boot() {
   }
 
   // ---------- the simulation, warmed up so the first frame is already busy ----------
-  const sim = createSim(162), snaps = [], MAXSNAP = 300;
+  // On the portfolio the same crew looks after the site itself, and the clock is the visitor's own.
+  const site = opts.tenant === 'site';
+  const sim = site ? createSim(334, { kinds: SITE_KINDS }) : createSim(162), snaps = [], MAXSNAP = 300;
   for (let i = 0; i < 500; i++) { sim.step(0.1); if (i % 5 === 4) snaps.push(sim.snapshot()); }
   sim.fx.length = 0;
+  const wall = () => { const d = new Date(); return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds(); };
+  if (site) { hud.setTheme(SITE_CREW, SITE_WORDS); hud.setClock(wall() - sim.state.t); }
   let mode = 'live', viewIdx = 0, snapAcc = 0, jump = 2, sel = null, follow = null, fly = null, turn = 0, listOpen = false, dirty = true, hudAcc = 0, answerT = 0;
   const dropping = new Set(), inboxP = new Map();
   const view = () => mode === 'live' ? sim.state : snaps[viewIdx];
@@ -146,8 +169,8 @@ function boot() {
   const setHTML = (el, html) => { if (el._h !== html) { el._h = html; el.innerHTML = html; } };
   function paint() {
     const v = view(), past = mode !== 'live', ago = past ? Math.round(sim.state.t - v.t) : 0;
-    setHTML($('#stats'), hud.stats(v)); setHTML($('#crew'), hud.crew(v, sel)); setHTML($('#radio'), hud.radio(v));
-    setHTML($('#alerts'), hud.alerts(v, past, ago));
+    setHTML($('#stats'), hud.stats(v, embed)); setHTML($('#crew'), hud.crew(v, sel)); setHTML($('#radio'), hud.radio(v));
+    setHTML($('#alerts'), hud.alerts(v, past, ago, embed ? 1 : 2));
     const ins = $('#inspect'), html = hud.inspect(v, sel, past); ins.hidden = !sel || (listOpen && !phone); setHTML(ins, html);
     const li = $('#list'); li.hidden = !listOpen; if (listOpen) setHTML(li, hud.list(v, past));
     $('#clock').textContent = hud.clock(v.t);
@@ -198,12 +221,13 @@ function boot() {
   $('#soundBtn').onclick = () => { const on = sound.toggle(); $('#soundBtn').setAttribute('aria-pressed', String(on)); $('#soundBtn').textContent = on ? 'Sound on' : 'Sound off'; };
   $('#rotL').onclick = () => { turn += Math.PI / 2; }; $('#rotR').onclick = () => { turn -= Math.PI / 2; };
   $('#homeBtn').onclick = () => { follow = null; fly = null; if (controls) { const d = HOME.clone().sub(controls.target); shift(d); } cam.zoom = 1; cam.updateProjectionMatrix(); };
+  $('#zoomIn').onclick = () => zoomBy(1.3); $('#zoomOut').onclick = () => zoomBy(1 / 1.3);
   $('#coachX').onclick = () => { $('#coach').hidden = true; };
   $('#liveBtn').onclick = goLive;
   $('#scrub').oninput = e => { const i = +e.target.value; if (i >= snaps.length - 1) goLive(); else rewindTo(i); };
   addEventListener('keydown', e => {
-    if (e.key === 'Escape') { if (listOpen) { listOpen = false; $('#listBtn').setAttribute('aria-pressed', 'false'); } else select(null); dirty = true; }
-    if (e.key === '/' && document.activeElement !== $('#askIn')) { e.preventDefault(); $('#askIn').focus(); }
+    if (e.key === 'Escape') { if (listOpen) { listOpen = false; $('#listBtn').setAttribute('aria-pressed', 'false'); } else if (sel) select(null); dirty = true; }
+    if (!embed && e.key === '/' && document.activeElement !== $('#askIn')) { e.preventDefault(); $('#askIn').focus(); }
   });
 
   // ---------- picking ----------
@@ -213,15 +237,20 @@ function boot() {
   canvas.addEventListener('pointermove', e => { if (down) { if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) { follow = null; fly = null; } return; } canvas.classList.toggle('hit', !!hit(e)); });
   addEventListener('pointerup', e => {
     canvas.classList.remove('drag'); if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null;
-    if (moved > 6 || e.target !== canvas) return;
+    const on = e.composedPath ? e.composedPath()[0] : e.target;      // inside a shadow root the event's target is the host
+    if (moved > 6 || on !== canvas) return;
     const h = hit(e); select(h ? (h.bot ? { type: 'bot', id: h.bot } : { type: 'station', id: h.station }) : null);
   });
 
   // ---------- frame loop ----------
-  let last = performance.now(), tA = 0, intro = reduce ? 1 : 0;
+  let last = performance.now(), tA = 0, intro = reduce ? 1 : 0, visible = true, ready = false, scrollAz = 0, away = false;
   if (!reduce) { cam.zoom = 0.6; cam.updateProjectionMatrix(); }
+  if (window.IntersectionObserver) new IntersectionObserver(es => { visible = es[es.length - 1].isIntersecting; }, { rootMargin: '80px' }).observe(embed && opts.host ? opts.host : app);
   const ctx = { busy: {}, waiting: 0, incidents: 0 }, dv = new T.Vector3();
   function frame(now) {
+    requestAnimationFrame(frame);
+    if (!visible) { last = now; away = true; return; }                 // nothing runs while the base is off screen
+    if (away) { away = false; if (site) hud.setClock(wall() - sim.state.t); dirty = true; }
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now; tA += dt;
     if (mode === 'live') {
       sim.step(dt); snapAcc += dt;
@@ -242,6 +271,10 @@ function boot() {
     if (follow) { const b = botOf(follow); dv.set(b.pos.x, 3, b.pos.z).sub(target()).multiplyScalar(damp(dt, 4)); shift(dv); }
     else if (fly) { dv.copy(fly).sub(target()); if (dv.length() < 0.2) fly = null; else shift(dv.multiplyScalar(damp(dt, 5))); }
     if (Math.abs(turn) > 0.001) { const s = turn * damp(dt, 6); turn -= s; cam.position.sub(target()).applyAxisAngle(UP, s).add(target()); }
+    if (embed && !reduce) {                                            // the base turns a little as the page scrolls past it
+      const r = app.getBoundingClientRect(), vhp = window.innerHeight || 1, prog = clamp((vhp - r.top) / (vhp + r.height));
+      const s = ((prog - 0.5) * 0.9 - scrollAz) * damp(dt, 5); scrollAz += s; cam.position.sub(target()).applyAxisAngle(UP, s).add(target());
+    }
     if (controls) controls.update(); else cam.lookAt(target());
     const z = cam.zoom < 0.82 ? 'far' : cam.zoom > 1.9 ? 'near' : 'mid'; if (app.dataset.zoom !== z) app.dataset.zoom = z;
     renderer.render(scene, cam);
@@ -261,10 +294,12 @@ function boot() {
 
     hudAcc += dt; if (answerT > 0) { answerT -= dt; if (answerT <= 0) say(''); }
     if (dirty || hudAcc > 0.25) { hudAcc = 0; paint(); }
-    requestAnimationFrame(frame);
+    if (!ready) { ready = true; if (opts.onReady) opts.onReady(); }
   }
   paint(); requestAnimationFrame(frame);
-  window.__outpost = { sim, cam, select, goLive, rewindTo, snaps };
+  // Something real happened on the host page: hand it to the crew as a task.
+  const event = (title, kind = 'summary') => { if (sim.state.queue.length >= 4) return null; if (mode !== 'live') goLive(); const t = sim.dispatch(kind, { title, from: 'page' }); dirty = true; return t; };
+  const handle = { sim, cam, select, goLive, rewindTo, snaps, event };
+  window.__outpost = handle;
+  return handle;
 }
-
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

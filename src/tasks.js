@@ -25,23 +25,27 @@ export const kindById = Object.fromEntries(KINDS.map(k => [k.kind, k]));
 export const CALM = KINDS.filter(k => !k.risk.length && !k.reach).map(k => k.kind);
 export const RISKY = ['refund', 'invoice', 'export', 'close'];
 
-export function pickKind(r, pool) {
-  const ks = pool ? KINDS.filter(k => pool.includes(k.kind)) : KINDS;
+export const calmOf = kinds => kinds.filter(k => !k.risk.length && !k.reach).map(k => k.kind);
+
+export function pickKind(r, pool, kinds = KINDS) {
+  const ks = pool ? kinds.filter(k => pool.includes(k.kind)) : kinds;
   const total = ks.reduce((n, k) => n + k.w, 0);
   let x = r() * total;
   for (const k of ks) { x -= k.w; if (x <= 0) return k; }
   return ks[ks.length - 1];
 }
 
-export function makeTask(kind, r, seq, opts = {}) {
-  const k = typeof kind === 'string' ? kindById[kind] : kind;
+// `kinds` lets a different workplace bring its own catalog. `opts.title` is for work that comes
+// from outside the simulation, such as something a real visitor just did.
+export function makeTask(kind, r, seq, opts = {}, kinds = KINDS) {
+  const k = typeof kind === 'string' ? kinds.find(x => x.kind === kind) : kind;
   let amount = null;
   if (k.amount) amount = opts.amount ?? Math.round((k.amount[0] + r() * (k.amount[1] - k.amount[0])) / 5) * 5;
-  const reach = k.reach && (opts.reach ?? r() < k.reach.p) ? { tool: k.reach.tool, what: k.reach.what } : null;
+  const reach = k.reach && (opts.reach ?? r() < k.reach.p) ? { tool: k.reach.tool, what: k.reach.what, label: k.reach.label || null } : null;
   return {
     id: 'T-' + String(seq).padStart(3, '0'),
-    kind: k.kind, title: k.title(r, amount), tool: k.tool, team: k.team, library: k.library,
-    risk: k.risk.slice(), amount, reach,
+    kind: k.kind, title: opts.title || k.title(r, amount), tool: k.tool, team: k.team, library: k.library,
+    risk: k.risk.slice(), amount, reach, why: k.why || null, from: opts.from || null,
     cost: Math.round((0.03 + r() * 0.3) * 100) / 100,
     status: 'queued', assignee: null, approval: null, approved: false, reworked: false, route: null,
   };

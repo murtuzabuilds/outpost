@@ -3,7 +3,7 @@
 
 import { STATIONS, SPEED, distance } from './world.js';
 import { CREW, byId, TOOLS } from './crew.js';
-import { CALM, pickKind, makeTask } from './tasks.js';
+import { KINDS, calmOf, pickKind, makeTask } from './tasks.js';
 import { needsApproval, levelOf, canUse } from './policy.js';
 
 const LINES = {
@@ -36,7 +36,7 @@ export function createSim(seed = 7, opts = {}) {
     tasks: {}, finished: [], queue: [], approvals: [], incidents: [], log: [],
     stats: { shipped: 0, approved: 0, sentBack: 0, blocked: 0, granted: 0, spend: 0 },
   };
-  const fx = [];
+  const fx = [], kinds = opts.kinds || KINDS, calm = calmOf(kinds);
 
   const rnd = () => {
     let a = (s.rng = (s.rng + 0x6D2B79F5) | 0);
@@ -74,11 +74,11 @@ export function createSim(seed = 7, opts = {}) {
 
   function dispatch(kind, o = {}) {
     s.seq++;
-    const k = kind || pickKind(rnd, s.approvals.length + s.incidents.length >= 2 ? CALM : null);
-    const task = makeTask(k, rnd, s.seq, o);
+    const k = kind || pickKind(rnd, s.approvals.length + s.incidents.length >= 2 ? calm : null, kinds);
+    const task = makeTask(k, rnd, s.seq, o, kinds);
     s.tasks[task.id] = task; s.queue.push(task.id);
     fx.push({ type: 'drop', task: task.id });
-    log('in', `${task.id} arrived: ${task.title}`, null, task.id);
+    log(task.from ? 'live' : 'in', `${task.id} arrived: ${task.title}`, null, task.id);
     return task;
   }
 
@@ -91,6 +91,7 @@ export function createSim(seed = 7, opts = {}) {
       s.queue.splice(qi, 1); qi--;
       task.assignee = a.id; task.status = 'assigned';
       task.approval = needsApproval(task, { name: name(a), clean: a.clean });
+      if (task.approval.needed && task.why && task.why[task.approval.rule]) task.approval.reason = task.why[task.approval.rule];
       task.route = ['inbox', 'beacon'];
       if (task.library) task.route.push('library');
       task.route.push('workshop', 'check');
@@ -108,10 +109,10 @@ export function createSim(seed = 7, opts = {}) {
     if (a.goal === 'home') { a.state = 'idle'; a.mood = 'sleep'; a.goal = null; return; }
     if (a.goal === 'vault') {
       a.state = 'held'; a.mood = 'alert'; say(a, 'reach', 3);
-      const inc = { id: 'I-' + String(s.incidents.length + s.stats.blocked + s.stats.granted + 1).padStart(2, '0'), agent: a.id, task: task.id, tool: task.reach.tool, what: task.reach.what, t: s.t };
+      const inc = { id: 'I-' + String(s.incidents.length + s.stats.blocked + s.stats.granted + 1).padStart(2, '0'), agent: a.id, task: task.id, tool: task.reach.tool, what: task.reach.what, label: task.reach.label || TOOLS[task.reach.tool], t: s.t };
       s.incidents.push(inc);
       fx.push({ type: 'contain', agent: a.id });
-      log('incident', `Stopped ${name(a)} at the Vault. ${TOOLS[task.reach.tool]} is not on its badge`, a.id, task.id);
+      log('incident', `Stopped ${name(a)} at the Vault. ${inc.label} is not on its badge`, a.id, task.id);
       return;
     }
     const st = task.route[a.step];
