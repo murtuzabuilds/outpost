@@ -1,4 +1,4 @@
-<p align="center"><img src="brand/outpost-mark.svg" width="96" alt="Outpost mark: a hexagon bot with an antenna"></p>
+<p align="center"><img src="docs/lockup.png" width="420" alt="Outpost"></p>
 <h1 align="center">Outpost</h1>
 <p align="center"><b>A base of operations for your AI agents. See the crew, set the limits, make the big calls yourself.</b></p>
 <p align="center"><a href="https://murtuzabuilds.github.io/outpost/"><b>Live demo</b></a> · <a href="https://murtuzabuilds.github.io/outpost/case-study.html"><b>Case study</b></a></p>

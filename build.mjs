@@ -12,7 +12,7 @@ const js = r.outputFiles[0].text;
 // The embed build is wrapped in a function, so it only runs once the host page has loaded three.js.
 const e = await build({ ...common, entryPoints: ['app/embed.js'], globalName: '__OP' });
 const embedJs = `window.__opMount=function(host,opts){${e.outputFiles[0].text}\nreturn __OP.mount(host,opts);};\n`;
-const fonts = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400..700&display=swap';
+const fonts = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@400..700&family=Geist:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap';
 const libs = [
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
   'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js',
@@ -37,7 +37,7 @@ fs.writeFileSync('index.html', `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="description" content="Outpost is a base of operations for AI agents: see your crew at work, set what each bot may touch, and decide the risky calls yourself.">
-<meta name="theme-color" content="#0B0C26">
+<meta name="theme-color" content="#04050B">
 <link rel="icon" href="brand/favicon.svg">
 </head>
 <body>

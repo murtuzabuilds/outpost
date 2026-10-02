@@ -7,6 +7,7 @@ import { makeFx } from './fx.js';
 import { makeSound } from './sound.js';
 import { ask } from './ask.js';
 import * as hud from './hud.js';
+import { P } from './palette.js';
 
 // `root` is where the markup lives: the document for the full page, or a shadow root when the
 // base is mounted inside another site. `opts.embed` trims the panels and stops the scene from
@@ -25,14 +26,15 @@ export function boot(root = document, opts = {}) {
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, phone ? 1.75 : 2));
 
-  // a starry dusk behind the scene, drawn once
+  // deep space behind the scene, drawn once: cold stars, a few in the brand colour
   {
     const c = document.createElement('canvas'); c.width = 1200; c.height = 700; const g = c.getContext('2d');
-    for (let i = 0; i < 150; i++) { const y = Math.pow(Math.random(), 1.6) * 520, a = 0.25 + Math.random() * 0.6; g.fillStyle = `rgba(255,244,214,${a})`; const r = Math.random() < 0.12 ? 1.6 : 0.9; g.beginPath(); g.arc(Math.random() * 1200, y, r, 0, 6.3); g.fill(); }
-    app.style.backgroundImage = `url(${c.toDataURL()}), radial-gradient(120% 90% at 50% 100%, #6A3472 0%, #2B2168 42%, #0B0C26 100%)`;
+    for (let i = 0; i < 190; i++) { const y = Math.pow(Math.random(), 1.3) * 640, a = 0.18 + Math.random() * 0.6; g.fillStyle = `rgba(222,231,250,${a * 0.8})`; const r = Math.random() < 0.1 ? 1.5 : 0.8; g.beginPath(); g.arc(Math.random() * 1200, y, r, 0, 6.3); g.fill(); }
+    app.style.backgroundImage = `url(${c.toDataURL()}), var(--sky)`;
     app.style.backgroundSize = 'cover, auto';
   }
 
+  app.style.setProperty('--accent', P.accent); STATIONS.beacon.color = P.accent;
   const scene = new T.Scene();
   const cam = new T.OrthographicCamera(-1, 1, 1, -1, 1, 700);
   const HOME = new T.Vector3(6, 3, -3), POLAR = 0.96, DIST = 260, UP = new T.Vector3(0, 1, 0);
@@ -138,15 +140,15 @@ export function boot(root = document, opts = {}) {
     for (const f of sim.fx) {
       const b = f.agent && botOf(f.agent);
       if (f.type === 'drop') dropping.add(f.task);
-      else if (f.type === 'pickup') { fx.ring(W.center('inbox'), '#6FC3FF', 1, 4.5, 0.5); sound.play('pickup'); }
-      else if (f.type === 'gate-wait') { fx.ring(W.center('gate'), '#FFC857', 1.5, 7, 0.9); sound.play('wait'); }
-      else if (f.type === 'gate-open') { W.gateOpen = 2.4; fx.burst(v3.copy(W.center('gate')).setY(3.5).clone(), '#6FE8C0', 18, 7, 0.9, 1.8); fx.ring(W.center('gate'), '#6FE8C0', 1.5, 7.5, 0.8); sound.play('approve'); }
-      else if (f.type === 'return') { fx.burst(b.pos.clone(), '#FF7A59', 10, 5, 0.7, 1.5); sound.play('back'); }
+      else if (f.type === 'pickup') { fx.ring(W.center('inbox'), P.ice, 1, 4.5, 0.5); sound.play('pickup'); }
+      else if (f.type === 'gate-wait') { fx.ring(W.center('gate'), P.amber, 1.5, 7, 0.9); sound.play('wait'); }
+      else if (f.type === 'gate-open') { W.gateOpen = 2.4; fx.burst(v3.copy(W.center('gate')).setY(3.5).clone(), P.accent, 18, 7, 0.9, 1.8); fx.ring(W.center('gate'), P.accent, 1.5, 7.5, 0.8); sound.play('approve'); }
+      else if (f.type === 'return') { fx.burst(b.pos.clone(), P.amber, 10, 5, 0.7, 1.5); sound.play('back'); }
       else if (f.type === 'fail') { W.checkFlash = 1.6; sound.play('fail'); }
-      else if (f.type === 'pass') fx.ring(W.center('check'), '#6FE8C0', 1, 5, 0.6);
-      else if (f.type === 'launch') { W.launchPulse = 1.4; fx.shoot(W.launchFrom, W.launchDir, f.needed ? '#6FE8C0' : '#6FC3FF'); fx.ring(W.center('launch'), '#FF7EB6', 1.5, 7, 0.8); if (b) b.cheer = 0.7; sound.play('launch'); }
-      else if (f.type === 'level') { fx.burst(b.head.clone(), '#FFF4D6', 22, 6, 1.1, 1.6, 3); sound.play('level'); }
-      else if (f.type === 'contain') { fx.ring(b.pos, '#FF5470', 1.5, 6, 0.9, 0.1); sound.play('incident'); }
+      else if (f.type === 'pass') fx.ring(W.center('check'), P.ice, 1, 5, 0.6);
+      else if (f.type === 'launch') { W.launchPulse = 1.4; fx.shoot(W.launchFrom, W.launchDir, f.needed ? P.accent : P.ice); fx.ring(W.center('launch'), P.ice, 1.5, 7, 0.8); if (b) b.cheer = 0.7; sound.play('launch'); }
+      else if (f.type === 'level') { fx.burst(b.head.clone(), P.accent, 22, 6, 1.1, 1.6, 3); sound.play('level'); }
+      else if (f.type === 'contain') { fx.ring(b.pos, P.red, 1.5, 6, 0.9, 0.1); sound.play('incident'); }
       else if (f.type === 'release') fx.burst(b.pos.clone(), '#FF8FA3', 12, 5, 0.7, 1.5);
     }
     sim.fx.length = 0;
@@ -158,8 +160,8 @@ export function boot(root = document, opts = {}) {
       let p = inboxP.get(id);
       if (!p) { p = { m: makeParcel(), y: dropping.has(id) && mode === 'live' ? 36 : 0, vy: 0 }; dropping.delete(id); scene.add(p.m); inboxP.set(id, p); }
       const spot = W.parcelSpots[Math.min(k, 5)], t = v.tasks[id];
-      p.m.userData.tint(t.risk.length ? '#FFC857' : '#6FC3FF');
-      if (p.y > 0) { p.vy += 70 * dt; p.y = Math.max(0, p.y - p.vy * dt); if (p.y === 0) { fx.ring(spot, '#6FC3FF', 0.8, 4, 0.6); fx.burst(new T.Vector3(spot.x, 1.4, spot.z), '#C9E8FF', 8, 4, 0.5, 1.2); sound.play('drop'); } }
+      p.m.userData.tint(t.risk.length ? P.amber : '#8D99B8');
+      if (p.y > 0) { p.vy += 70 * dt; p.y = Math.max(0, p.y - p.vy * dt); if (p.y === 0) { fx.ring(spot, P.ice, 0.8, 4, 0.6); fx.burst(new T.Vector3(spot.x, 1.4, spot.z), '#C9E8FF', 8, 4, 0.5, 1.2); sound.play('drop'); } }
       p.m.position.set(spot.x, spot.y + p.y, spot.z); p.m.rotation.y = k * 0.6; p.m.scale.setScalar(p.y > 0 ? 1 : 1);
     });
     for (const [id, p] of inboxP) if (!seen.has(id)) { scene.remove(p.m); inboxP.delete(id); }

@@ -19,21 +19,21 @@ export const TOOLS = {
 };
 
 export const CREW = [
-  { id: 'pip',   name: 'Pip',   job: 'Claims intake',     owner: 'Rosa Chen',    team: 'Claims',        clean: 9, color: '#FF7A59', body: 'pod',  hat: 'antenna',
+  { id: 'pip',   name: 'Pip',   job: 'Claims intake',     owner: 'Rosa Chen',    team: 'Claims',        clean: 9, color: '#F08C6E', body: 'pod',  hat: 'antenna',
     tools: ['claims.write', 'docs.write', 'crm.read'], quirk: 'Sorts everything. Including the snacks.' },
-  { id: 'sable', name: 'Sable', job: 'Fraud screening',   owner: 'Dev Okoye',    team: 'Claims',        clean: 5, color: '#B79CFF', body: 'cone', hat: 'visor',
+  { id: 'sable', name: 'Sable', job: 'Fraud screening',   owner: 'Dev Okoye',    team: 'Claims',        clean: 5, color: '#A99BF5', body: 'cone', hat: 'visor',
     tools: ['fraud.flag', 'crm.read'], quirk: 'Trusts no one. Fair, given the job.' },
-  { id: 'juno',  name: 'Juno',  job: 'Refunds and billing', owner: 'Priya Patel', team: 'Finance',      clean: 4, color: '#FFC857', body: 'box',  hat: 'halo',
+  { id: 'juno',  name: 'Juno',  job: 'Refunds and billing', owner: 'Priya Patel', team: 'Finance',      clean: 4, color: '#E6C06A', body: 'box',  hat: 'halo',
     tools: ['payments.refund', 'payments.pay', 'crm.read'], quirk: 'Counts twice, pays once.' },
-  { id: 'kite',  name: 'Kite',  job: 'Customer replies',  owner: 'Hana Lopez',   team: 'Customer Care', clean: 1, color: '#6FC3FF', body: 'pod',  hat: 'prop',
+  { id: 'kite',  name: 'Kite',  job: 'Customer replies',  owner: 'Hana Lopez',   team: 'Customer Care', clean: 1, color: '#7CC2F0', body: 'pod',  hat: 'prop',
     tools: ['email.send', 'crm.read', 'crm.write'], quirk: 'New here. Very keen. Asks before sending.' },
-  { id: 'bolt',  name: 'Bolt',  job: 'Broker assist',     owner: 'Wren Hayes',   team: 'Underwriting',  clean: 6, color: '#6FE8C0', body: 'drum', hat: 'spike',
+  { id: 'bolt',  name: 'Bolt',  job: 'Broker assist',     owner: 'Wren Hayes',   team: 'Underwriting',  clean: 6, color: '#74D6BC', body: 'drum', hat: 'spike',
     tools: ['docs.write', 'calendar.write', 'crm.write', 'crm.read'], quirk: 'Fastest on the deck and knows it.' },
-  { id: 'moss',  name: 'Moss',  job: 'Month-end close',   owner: 'Omar Ito',     team: 'Finance',       clean: 8, color: '#9BE36F', body: 'box',  hat: 'cap',
+  { id: 'moss',  name: 'Moss',  job: 'Month-end close',   owner: 'Omar Ito',     team: 'Finance',       clean: 8, color: '#A9D47A', body: 'box',  hat: 'cap',
     tools: ['ledger.write', 'payments.pay', 'accounts.close'], quirk: 'Has never once rounded up.' },
-  { id: 'dot',   name: 'Dot',   job: 'Scheduling',        owner: 'Mateo Diaz',   team: 'Claims',        clean: 2, color: '#FF7EB6', body: 'pod',  hat: 'bow',
+  { id: 'dot',   name: 'Dot',   job: 'Scheduling',        owner: 'Mateo Diaz',   team: 'Claims',        clean: 2, color: '#EE8FBA', body: 'pod',  hat: 'bow',
     tools: ['calendar.write', 'crm.read'], quirk: 'Believes every problem is a calendar problem.' },
-  { id: 'rook',  name: 'Rook',  job: 'Records and reports', owner: 'Lena Fischer', team: 'Data Science', clean: 3, color: '#F2EDE0', body: 'cone', hat: 'dish',
+  { id: 'rook',  name: 'Rook',  job: 'Records and reports', owner: 'Lena Fischer', team: 'Data Science', clean: 3, color: '#B9C4DC', body: 'cone', hat: 'dish',
     tools: ['docs.write', 'data.export', 'accounts.close'], quirk: 'Remembers everything. Brings it up.' },
 ];
 

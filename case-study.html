@@ -5,59 +5,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="description" content="Outpost case study: how one person can supervise a crew of AI agents, designed as a place you can look at and run.">
-<meta name="theme-color" content="#0B0C26">
+<meta name="theme-color" content="#05060A">
 <link rel="icon" href="brand/favicon.svg">
 <title>Outpost case study</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400..700&display=swap">
 <style>
-/* Layout: one reading column on a dusk ground, with wide screenshots breaking out of it. */
-:root{color-scheme:dark;--night:#0B0C26;--panel:#14143F;--line:rgba(255,244,214,.16);--cream:#FFF4D6;--ink-2:#C4C2E6;--ink-3:#8E8CC0;--coral:#FF7A59;--amber:#FFC857;--mint:#6FE8C0;--red:#FF5470;--on-cream:#1A1642;
-  --ui:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace}
+/* Layout: one reading column on a graphite ground, with wide screenshots breaking out of it. */
+:root{color-scheme:dark;--void:#05060A;--line:rgba(214,224,246,.14);--ink:#EEF2FA;--ink-2:#A9B1C4;--ink-3:#777F94;--accent:#6F86FF;--amber:#FFB547;--red:#FF4D5E;
+  --serif:"Instrument Serif",Georgia,serif;--ui:"Geist","Inter",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace}
 *{box-sizing:border-box}
-body{margin:0;background:var(--night);background-image:radial-gradient(90% 50% at 50% 0%,#2B2168 0%,transparent 70%);background-repeat:no-repeat;color:var(--cream);font-family:var(--ui);font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:28px 80px}
+body{margin:0;background:var(--void);background-image:radial-gradient(90% 46% at 50% 0%,#141B33 0%,transparent 72%);background-repeat:no-repeat;color:var(--ink);font-family:var(--ui);font-size:17.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:30px 80px}
 .col{max-width:680px;margin-inline:auto}
-header{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:64px}
-.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:24px;letter-spacing:-.03em;color:inherit;text-decoration:none}
-.brand img{width:40px;height:40px}
-.brand span{font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-left:4px}
+header{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:72px}
+.brand{display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none}
+.brand img{height:26px;width:auto;display:block}
+.brand span{font:400 10px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:5px 11px}
 nav{display:flex;gap:10px;flex-wrap:wrap}
-.btn{display:inline-block;border-radius:13px;padding:9px 16px 10px;font-weight:700;font-size:15px;text-decoration:none;background:var(--coral);color:#2A0E06;box-shadow:0 3px 0 #B8472B}
-.btn.ghost{background:rgba(255,244,214,.1);color:var(--cream);box-shadow:inset 0 0 0 1.5px var(--line)}
-:focus-visible{outline:2.5px solid var(--amber);outline-offset:2px}
-small.k{display:block;font:600 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:12px}
-h1{font-size:clamp(38px,6.4vw,68px);line-height:1;letter-spacing:-.035em;font-weight:800;margin:0 0 22px;text-wrap:balance}
-h2{font-size:clamp(26px,3.6vw,36px);line-height:1.1;letter-spacing:-.025em;font-weight:800;margin:72px 0 14px;text-wrap:balance}
-h3{font-size:20px;margin:0 0 4px;font-weight:700}
+.btn{display:inline-block;border-radius:999px;padding:10px 18px;font-weight:500;font-size:14px;text-decoration:none;background:var(--ink);color:#07080D}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+small.k{display:block;font:400 10.5px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:16px}
+h1{font-family:var(--serif);font-size:clamp(42px,6.6vw,72px);line-height:1;letter-spacing:-.015em;font-weight:400;margin:0 0 24px;text-wrap:balance}
+h2{font-family:var(--serif);font-size:clamp(30px,3.8vw,40px);line-height:1.08;letter-spacing:-.01em;font-weight:400;margin:76px 0 16px;text-wrap:balance}
+h3{font-size:17px;margin:0 0 4px;font-weight:500}
 p{margin:0 0 16px;color:var(--ink-2)}
-p.lede{font-size:22px;line-height:1.4;color:var(--cream)}
-a{color:var(--amber)}
-strong{color:var(--cream)}
-figure{margin:40px 0}
-figure img{display:block;width:100%;height:auto;border-radius:20px;border:1.5px solid var(--line)}
-figcaption{font-size:14px;color:var(--ink-3);margin-top:10px;text-align:center}
-.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:40px 0}
+p.lede{font-size:21px;line-height:1.45;color:var(--ink)}
+a{color:#AEBBFF}
+strong{color:var(--ink);font-weight:500}
+figure{margin:44px 0}
+figure img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--line)}
+figcaption{font-size:13.5px;color:var(--ink-3);margin-top:12px;text-align:center}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:44px 0}
 .pair figure{margin:0}
-.cards{display:grid;gap:12px;margin:22px 0}
-.card{background:var(--panel);border:1.5px solid var(--line);border-radius:18px;padding:18px 20px}
-.card p{margin:0;font-size:16.5px}
-ol.rules{list-style:none;margin:20px 0;padding:0;display:grid;gap:8px;counter-reset:r}
-ol.rules li{counter-increment:r;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline;background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:12px 16px;color:var(--ink-2);font-size:16.5px}
-ol.rules li::before{content:counter(r);font:700 13px var(--mono);background:var(--amber);color:var(--on-cream);border-radius:8px;padding:1px 8px}
-.nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:24px 0}
-.num{background:var(--panel);border:1.5px solid var(--line);border-radius:18px;padding:16px 18px}
-.num b{display:block;font-size:44px;line-height:1;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.num span{display:block;font-size:14.5px;color:var(--ink-2);margin-top:6px}
-.note{font-size:14.5px;color:var(--ink-3)}
+.cards{display:grid;gap:0;margin:24px 0;border-top:1px solid var(--line)}
+.card{border-bottom:1px solid var(--line);padding:18px 0}
+.card p{margin:0;font-size:16px}
+ol.rules{list-style:none;margin:22px 0;padding:0;display:grid;counter-reset:r;border-top:1px solid var(--line)}
+ol.rules li{counter-increment:r;display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:baseline;border-bottom:1px solid var(--line);padding:14px 0;color:var(--ink-2);font-size:16px}
+ol.rules li::before{content:"0" counter(r);font:400 11px var(--mono);letter-spacing:.1em;color:var(--amber)}
+.nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0;margin:28px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.num{padding:20px 20px 20px 0}
+.num b{display:block;font-family:var(--serif);font-size:52px;line-height:1;font-weight:400;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.num span{display:block;font-size:14px;color:var(--ink-2);margin-top:8px}
+.note{font-size:14px;color:var(--ink-3)}
 ul{margin:0 0 16px;padding-left:20px;color:var(--ink-2)}
 li{margin-bottom:6px}
-footer{margin-top:80px;padding-top:22px;border-top:1.5px solid var(--line);font-size:14px;color:var(--ink-3);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer{margin-top:84px;padding-top:22px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-3);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <a class="brand" href="./"><img src="brand/outpost-mark.svg" alt="">Outpost<span>Case study</span></a>
+    <a class="brand" href="./"><img src="brand/outpost-wordmark.svg" alt="Outpost"><span>Case study</span></a>
     <nav><a class="btn" href="./">Open the live demo</a><a class="btn ghost" href="https://github.com/murtuzabuilds/outpost">Code</a></nav>
   </header>
 

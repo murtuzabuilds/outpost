@@ -2,8 +2,9 @@
 // and a parcel it tows behind it. Everything it shows comes from the simulation state.
 import { T, col, std, lit, add, mesh, box, cyl, ball, cone, torus, sprite, canvasTex, glowTex, clamp, damp } from './gfx.js';
 import { levelOf, LEVELS } from '../src/index.js';
+import { P } from './palette.js';
 
-const INK = '#15143A', EYE = '#FFF4D6';
+const INK = '#04060D', EYE = P.ice;
 const shade = (c, k = 0.68) => '#' + new T.Color(c).multiplyScalar(k).getHexString();
 
 function drawFace(g, mood, blink) {
@@ -32,50 +33,50 @@ const BODY = {
 };
 
 function hat(kind, g, top, c) {
-  const dk = std(shade(c)), spin = [];
-  if (kind === 'antenna') { g.add(cyl(0.05, 0.05, 0.8, 5, dk, 0, top + 0.4, 0), ball(0.2, lit('#FFC857'), 0, top + 0.9, 0, false)); return { h: 1.1, spin }; }
-  if (kind === 'visor') { const t = torus(0.78, 0.13, 6, 14, dk, 0, top - 0.12, 0); t.rotation.x = Math.PI / 2; g.add(t); const a = cyl(0.04, 0.04, 0.9, 5, dk, 0.55, top + 0.35, -0.2); a.rotation.z = -0.35; g.add(a, ball(0.13, lit('#FF5470'), 0.71, top + 0.78, -0.2, false)); return { h: 0.95, spin }; }
-  if (kind === 'halo') { const t = torus(0.62, 0.07, 6, 22, lit('#FFE9B8'), 0, top + 0.55, 0, false); t.rotation.x = Math.PI / 2; g.add(t); return { h: 0.75, spin }; }
-  if (kind === 'prop') { g.add(cyl(0.06, 0.06, 0.5, 5, dk, 0, top + 0.25, 0)); const p = new T.Group(); p.position.y = top + 0.55; p.add(box(1.7, 0.05, 0.24, std('#FFF4D6'), 0, 0, 0), box(0.24, 0.05, 1.7, std('#FFF4D6'), 0, 0, 0)); g.add(p); spin.push(p); return { h: 0.75, spin }; }
+  const dk = std(c, { emissive: col(c), emissiveIntensity: 0.4, roughness: 0.45 }), spin = [];
+  if (kind === 'antenna') { g.add(cyl(0.05, 0.05, 0.8, 5, dk, 0, top + 0.4, 0), ball(0.2, lit(c), 0, top + 0.9, 0, false)); return { h: 1.1, spin }; }
+  if (kind === 'visor') { const t = torus(0.78, 0.13, 6, 14, dk, 0, top - 0.12, 0); t.rotation.x = Math.PI / 2; g.add(t); const a = cyl(0.04, 0.04, 0.9, 5, dk, 0.55, top + 0.35, -0.2); a.rotation.z = -0.35; g.add(a, ball(0.13, lit(P.red), 0.71, top + 0.78, -0.2, false)); return { h: 0.95, spin }; }
+  if (kind === 'halo') { const t = torus(0.62, 0.07, 6, 22, lit(P.ice), 0, top + 0.55, 0, false); t.rotation.x = Math.PI / 2; g.add(t); return { h: 0.75, spin }; }
+  if (kind === 'prop') { g.add(cyl(0.06, 0.06, 0.5, 5, dk, 0, top + 0.25, 0)); const p = new T.Group(); p.position.y = top + 0.55; p.add(box(1.7, 0.05, 0.24, std(P.ice), 0, 0, 0), box(0.24, 0.05, 1.7, std(P.ice), 0, 0, 0)); g.add(p); spin.push(p); return { h: 0.75, spin }; }
   if (kind === 'spike') { g.add(cone(0.32, 0.85, 6, dk, 0, top + 0.4, 0)); return { h: 0.95, spin }; }
   if (kind === 'cap') { g.add(cyl(0.74, 0.78, 0.34, 10, dk, 0, top + 0.16, 0), box(0.95, 0.09, 0.7, dk, 0, top + 0.06, 0.72)); return { h: 0.5, spin }; }
-  if (kind === 'bow') { const b = std('#FFF4D6'); const l = cone(0.34, 0.6, 6, b, -0.32, top + 0.3, 0), r = cone(0.34, 0.6, 6, b, 0.32, top + 0.3, 0); l.rotation.z = -Math.PI / 2; r.rotation.z = Math.PI / 2; g.add(l, r, ball(0.17, b, 0, top + 0.3, 0)); return { h: 0.7, spin }; }
-  const d = mesh(new T.SphereGeometry(0.55, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), std('#C9CBFF', { side: T.DoubleSide }), 0, top + 0.7, 0); d.rotation.x = Math.PI - 0.6; g.add(cyl(0.05, 0.05, 0.5, 5, dk, 0, top + 0.25, 0), d); return { h: 1.0, spin };
+  if (kind === 'bow') { const b = std(P.ice); const l = cone(0.34, 0.6, 6, b, -0.32, top + 0.3, 0), r = cone(0.34, 0.6, 6, b, 0.32, top + 0.3, 0); l.rotation.z = -Math.PI / 2; r.rotation.z = Math.PI / 2; g.add(l, r, ball(0.17, b, 0, top + 0.3, 0)); return { h: 0.7, spin }; }
+  const d = mesh(new T.SphereGeometry(0.55, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), std(P.ceramic, { side: T.DoubleSide }), 0, top + 0.7, 0); d.rotation.x = Math.PI - 0.6; g.add(cyl(0.05, 0.05, 0.5, 5, dk, 0, top + 0.25, 0), d); return { h: 1.0, spin };
 }
 
 export function makeParcel() {
-  const g = new T.Group(), m = std('#6FC3FF');
-  g.add(box(0.92, 0.92, 0.92, m, 0, 0, 0), box(0.96, 0.96, 0.2, std('#FFF4D6'), 0, 0, 0, false), box(0.2, 0.96, 0.96, std('#FFF4D6'), 0, 0, 0, false));
+  const g = new T.Group(), m = std('#8D99B8', { emissive: col('#8D99B8'), emissiveIntensity: 0.4, roughness: 0.5 });
+  g.add(box(0.92, 0.92, 0.92, m, 0, 0, 0), box(0.96, 0.96, 0.2, std(P.navy), 0, 0, 0, false), box(0.2, 0.96, 0.96, std(P.navy), 0, 0, 0, false));
   g.userData.m = m; g.userData.c = '';
-  g.userData.tint = c => { if (g.userData.c !== c) { g.userData.c = c; m.color.copy(col(c)); } };
+  g.userData.tint = c => { if (g.userData.c !== c) { g.userData.c = c; m.color.copy(col(c)); m.emissive.copy(col(c)); } };
   return g;
 }
 
 export function makeBot(spec, i, scene) {
   const SC = 1.5, root = new T.Group(), body = new T.Group(); root.add(body); root.scale.setScalar(SC); scene.add(root);
-  const c = spec.color, B0 = BODY[spec.body], main = std(c), dk = std(shade(c));
+  const c = spec.color, B0 = BODY[spec.body], main = std('#EDF1F9', { emissive: col('#C9D3EA'), emissiveIntensity: 0.16, roughness: 0.36, metalness: 0.04, flatShading: false }), dk = std(c, { emissive: col(c), emissiveIntensity: 0.4, roughness: 0.45 });
   body.add(mesh(B0.geo(), main));
   if (spec.body === 'box') body.add(box(1.94, 0.24, 1.64, dk, 0, -0.52, 0, false));
   if (spec.body === 'drum') { const t = torus(1.12, 0.1, 6, 18, dk, 0, -0.45, 0, false); t.rotation.x = Math.PI / 2; body.add(t); }
-  body.add(box(1.52, 0.9, 0.18, std('#1E1D52'), 0, 0.12, B0.front - 0.03, false));
+  body.add(box(1.52, 0.9, 0.18, std('#070A14'), 0, 0.12, B0.front - 0.03, false));
   const fc = canvasTex(128, 72, g => drawFace(g, 'sleep', false));
   body.add(mesh(new T.PlaneGeometry(1.34, 0.755), new T.MeshBasicMaterial({ map: fc.tex, transparent: true }), 0, 0.12, B0.front + 0.075, false));
   const hl = ball(0.27, dk, -(B0.w + 0.3), -0.25, 0.25), hr = ball(0.27, dk, B0.w + 0.3, -0.25, 0.25); body.add(hl, hr);
-  const th = cone(0.42, 0.5, 8, std('#2B2A63'), 0, B0.bot - 0.18, 0, false); th.rotation.x = Math.PI; body.add(th);
+  const th = cone(0.42, 0.5, 8, std(P.dark), 0, B0.bot - 0.18, 0, false); th.rotation.x = Math.PI; body.add(th);
   const flame = sprite(c, 3.4, 0.8); flame.position.y = B0.bot - 0.75; body.add(flame);
   const H = hat(spec.hat, body, B0.top, c);
-  const pips = [0, 1, 2].map(() => { const p = mesh(new T.OctahedronGeometry(0.15), lit('#FFF4D6'), 0, 0, 0, false); body.add(p); return p; });
+  const pips = [0, 1, 2].map(() => { const p = mesh(new T.OctahedronGeometry(0.15), lit(P.accent), 0, 0, 0, false); body.add(p); return p; });
   body.traverse(o => { if (o.isMesh && o.material.isMeshStandardMaterial) { o.castShadow = true; } });
   const proxy = mesh(new T.SphereGeometry(2.1, 8, 6), new T.MeshBasicMaterial({ visible: false }), 0, 0, 0, false);
   proxy.userData.bot = spec.id; root.add(proxy);
 
   // things that live in the world around the bot
   const pool = mesh(new T.PlaneGeometry(6.6, 6.6), new T.MeshBasicMaterial({ map: glowTex(), color: col(c), transparent: true, opacity: 0.4, blending: T.AdditiveBlending, depthWrite: false }), 0, 0.8, 0, false); pool.rotation.x = -Math.PI / 2; scene.add(pool);
-  const ring = mesh(new T.RingGeometry(2.5, 2.9, 40), lit('#FFF4D6', { transparent: true, opacity: 0.95, side: T.DoubleSide, depthWrite: false }), 0, 0.84, 0, false); ring.rotation.x = -Math.PI / 2; ring.visible = false; scene.add(ring);
-  const dome = mesh(new T.SphereGeometry(3.9, 18, 14), add('#FF5470', 0.2), 0, 0, 0, false); dome.visible = false; scene.add(dome);
+  const ring = mesh(new T.RingGeometry(2.5, 2.9, 40), lit(P.accent, { transparent: true, opacity: 0.95, side: T.DoubleSide, depthWrite: false }), 0, 0.84, 0, false); ring.rotation.x = -Math.PI / 2; ring.visible = false; scene.add(ring);
+  const dome = mesh(new T.SphereGeometry(3.9, 18, 14), add(P.red, 0.22), 0, 0, 0, false); dome.visible = false; scene.add(dome);
   const parcel = makeParcel(); parcel.scale.setScalar(1.35); parcel.visible = false; scene.add(parcel);
   const tg = new T.BufferGeometry().setAttribute('position', new T.BufferAttribute(new Float32Array(6), 3));
-  const tether = new T.Line(tg, new T.LineBasicMaterial({ color: col('#FFF4D6'), transparent: true, opacity: 0.55 })); tether.visible = false; tether.frustumCulled = false; scene.add(tether);
+  const tether = new T.Line(tg, new T.LineBasicMaterial({ color: col(P.ice), transparent: true, opacity: 0.6 })); tether.visible = false; tether.frustumCulled = false; scene.add(tether);
 
   const B = { spec, i, root, proxy, pos: new T.Vector3(), head: new T.Vector3(), yaw: 0.8, mood: 'sleep', blink: false, nextBlink: 1 + i * 0.37, cheer: 0, tilt: 0, lift: 0, ppos: new T.Vector3(), init: false };
 
@@ -99,7 +100,7 @@ export function makeBot(spec, i, scene) {
     }
     hl.position.set(-hx, ly, lz); hr.position.set(hx, ry, rz);
     flame.material.opacity = idle ? 0.22 : frozen ? 0.3 : 0.7 + Math.sin(t * 23 + i) * 0.15; flame.scale.setScalar(idle ? 2.2 : 3.4 + (tgt.moving ? 0.8 : 0));
-    pool.position.set(B.pos.x, tgt.pad ? 0.76 : 0.05, B.pos.z); pool.material.opacity = idle ? 0.2 : 0.42;
+    pool.position.set(B.pos.x, tgt.pad ? 0.76 : 0.05, B.pos.z); pool.material.opacity = idle ? 0.14 : 0.4;
     H.spin.forEach(s => { s.rotation.y += dt * (idle || frozen ? 1.5 : 18); });
 
     // face
@@ -115,7 +116,7 @@ export function makeBot(spec, i, scene) {
     const carrying = task && task.status === 'active';
     parcel.visible = tether.visible = !!carrying;
     if (carrying) {
-      parcel.userData.tint(task.approved ? '#6FE8C0' : task.approval && task.approval.needed ? '#FFC857' : '#6FC3FF');
+      parcel.userData.tint(task.approved ? P.accent : task.approval && task.approval.needed ? P.amber : '#8D99B8');
       const fx = Math.sin(B.yaw), fz = Math.cos(B.yaw), want = new T.Vector3(B.pos.x - fx * 3.3, B.pos.y + 0.1 + Math.sin(t * 3.1 + i) * 0.15, B.pos.z - fz * 3.3);
       if (o.snap || !parcel.userData.on) B.ppos.copy(want); else B.ppos.lerp(want, damp(dt, 6));
       parcel.position.copy(B.ppos); parcel.rotation.y = B.yaw + Math.sin(t * 1.7 + i) * 0.3; parcel.rotation.z = Math.sin(t * 2.3 + i) * 0.12;

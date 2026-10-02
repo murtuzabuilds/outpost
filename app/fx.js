@@ -36,7 +36,7 @@ export function makeFx(scene, reduce) {
     for (let i = shots.length - 1; i >= 0; i--) {
       const s = shots[i]; s.life -= dt; s.v += 70 * dt; s.p.position.addScaledVector(s.dir, s.v * dt); s.p.rotation.y += dt * 9; s.p.rotation.x += dt * 5;
       if (Math.random() < 0.8) spark(s.p.position, s.c, new T.Vector3((Math.random() - 0.5) * 2, -2, (Math.random() - 0.5) * 2), 0.5, 2.2, 0);
-      if (s.life <= 0) { burst(s.p.position, s.c, 26, 13, 1.1, 2.4, 9); burst(s.p.position, '#FFF4D6', 10, 8, 0.9, 1.6, 9); scene.remove(s.p); shots.splice(i, 1); }
+      if (s.life <= 0) { burst(s.p.position, s.c, 26, 13, 1.1, 2.4, 9); burst(s.p.position, '#EAF1FF', 10, 8, 0.9, 1.6, 9); scene.remove(s.p); shots.splice(i, 1); }
     }
   }
   return { spark, burst, ring, shoot, update };
