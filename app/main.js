@@ -70,7 +70,7 @@ export function boot(root = document, opts = {}) {
     // and the base is fitted and centred in what is left below it.
     const inset = embed ? Math.min(Hd * 0.5, (opts.topInset && opts.topInset()) || (small ? 150 : 0)) : 0, free = Hd - inset;   // on a phone the alert card sits at the top
     app.style.setProperty('--inset', inset + 'px');
-    const vh = (embed ? Math.max(104, (small ? 118 : 168) / (Wd / free)) : Math.max(100, (small ? 112 : 160) / aspect)) * Hd / free;
+    const vh = (embed ? Math.max(86, (small ? 106 : 150) / (Wd / free)) : Math.max(100, (small ? 112 : 160) / aspect)) * Hd / free;
     cam.left = -vh * aspect / 2; cam.right = vh * aspect / 2; cam.top = vh / 2; cam.bottom = -vh / 2;
     if (inset) cam.setViewOffset(Wd, Hd, 0, -inset / 2 + (small ? 0 : 14), Wd, Hd);
     else if (small && !embed) cam.setViewOffset(Wd, Hd, 0, -Hd * 0.04, Wd, Hd);     // on a phone, sit clear of the bottom bar
