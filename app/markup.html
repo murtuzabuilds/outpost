@@ -23,6 +23,7 @@
     <span data-c="bot"><i></i>Click a bot</span>
     <span data-c="send"><i></i>Send a task</span>
     <span data-c="gate"><i></i>Decide at the Gate</span>
+    <span data-c="lab"><i></i>Try the lab</span>
     <button type="button" id="coachX" aria-label="Hide tips">&times;</button>
   </div>
 
@@ -43,6 +44,8 @@
       </form>
       <div class="views">
         <button type="button" class="btn ghost" id="listBtn" aria-pressed="false">Roll call</button>
+        <button type="button" class="btn ghost" id="labBtn" aria-pressed="false">Autonomy lab</button>
+        <button type="button" class="btn ghost" id="ledBtn" aria-pressed="false">Logbook</button>
         <button type="button" class="btn ghost ic" id="rotL" aria-label="Turn the base left"><svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9a6.5 6.5 0 1 1 1.8 5.2"/><path d="M3.5 4.5V9H8"/></svg></button>
         <button type="button" class="btn ghost ic" id="rotR" aria-label="Turn the base right"><svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 9a6.5 6.5 0 1 0-1.8 5.2"/><path d="M16.5 4.5V9H12"/></svg></button>
         <button type="button" class="btn ghost ic" id="homeBtn" aria-label="Reset the view"><svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><circle cx="10" cy="10" r="1.6" fill="currentColor" stroke="none"/></svg></button>
@@ -55,7 +58,7 @@
     <div class="answer" id="answer" hidden></div>
   </footer>
 
-  <section class="list" id="list" hidden aria-label="Roll call"></section>
+  <section class="list" id="list" hidden aria-label="Roll call, Autonomy lab and Logbook"></section>
 
   <div class="fail" id="fail" hidden>
     <b>Outpost needs 3D graphics to run.</b>

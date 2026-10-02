@@ -1,7 +1,7 @@
 {
   "name": "outpost",
-  "version": "0.1.0",
-  "description": "Outpost: a base of operations for AI agents. See your crew, set what each bot can touch, and decide the risky calls yourself.",
+  "version": "0.2.0",
+  "description": "Outpost: the control room for a person who runs a crew of AI agents. Limits of authority, sign-off, a self-checking logbook, and a lab that tests a rule change before it goes live.",
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",

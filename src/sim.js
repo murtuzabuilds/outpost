@@ -4,7 +4,7 @@
 import { STATIONS, SPEED, distance } from './world.js';
 import { CREW, byId, TOOLS } from './crew.js';
 import { KINDS, calmOf, pickKind, makeTask } from './tasks.js';
-import { needsApproval, levelOf, canUse } from './policy.js';
+import { decide, levelOf, canUse, makeAuthority, authorityId } from './authority.js';
 
 const LINES = {
   take: ['Mine!', 'On it.', 'Ooh, a parcel.', 'Got this one.'],
@@ -34,8 +34,15 @@ export function createSim(seed = 7, opts = {}) {
       mood: 'sleep', say: null, sayT: 0, paused: false,
     })),
     tasks: {}, finished: [], queue: [], approvals: [], incidents: [], log: [],
-    stats: { shipped: 0, approved: 0, sentBack: 0, blocked: 0, granted: 0, spend: 0 },
+    authority: makeAuthority(opts.authority),
+    // asked: times a bot reached the Gate. alone / signed: dollars shipped without and with a person's yes.
+    stats: { shipped: 0, approved: 0, sentBack: 0, blocked: 0, granted: 0, spend: 0, asked: 0, alone: 0, signed: 0, waited: 0, answered: 0 },
   };
+  // The ledger is the record of every decision: what the rules allowed, held or stopped, and what a
+  // person then chose. It is append-only and lives outside the state, so neither a rewind nor a restore
+  // removes a line. It keeps the most recent 5,000.
+  let ledger = [], ledN = 0;
+  const LEDGER_MAX = 5000;
   const fx = [], kinds = opts.kinds || KINDS, calm = calmOf(kinds);
 
   const rnd = () => {
@@ -52,6 +59,15 @@ export function createSim(seed = 7, opts = {}) {
     if (s.log.length > 240) s.log.shift();
   };
   const name = a => byId[a.id].name;
+  const who = a => ({ name: name(a), clean: a.clean, tools: byId[a.id].tools });
+  const record = (e) => {
+    const task = e.task ? s.tasks[e.task] : null;
+    ledger.push({ n: ++ledN, t: Math.round(s.t * 10) / 10, authority: authorityId(s.authority), agent: e.agent || null, task: e.task || null, title: task ? task.title : null,
+      tool: e.tool === '-' ? null : e.tool || (task ? task.tool : null), risk: task && !e.noAmount ? task.risk.slice() : [], amount: task && task.amount != null && !e.noAmount ? task.amount : null,
+      level: e.agent ? levelOf(A(e.agent).clean, s.authority).id : null, limit: e.agent && s.authority.rules.money ? levelOf(A(e.agent).clean, s.authority).limit : null,
+      outcome: e.outcome, rule: e.rule || null, reason: e.reason || null, by: e.by, waited: e.waited != null ? Math.round(e.waited * 10) / 10 : null });
+    if (ledger.length > LEDGER_MAX) ledger.shift();        // a demo has to stop somewhere: the oldest lines go first
+  };
   const retire = id => { s.finished.push(id); while (s.finished.length > 30) delete s.tasks[s.finished.shift()]; };
 
   function freeSlot(station, a) {
@@ -90,8 +106,10 @@ export function createSim(seed = 7, opts = {}) {
       const a = able[Math.floor(rnd() * able.length)];
       s.queue.splice(qi, 1); qi--;
       task.assignee = a.id; task.status = 'assigned';
-      task.approval = needsApproval(task, { name: name(a), clean: a.clean });
+      const d = decide({ tool: task.tool, risk: task.risk, amount: task.amount }, who(a), s.authority);
+      task.approval = { needed: d.outcome === 'hold', rule: d.rule, reason: d.outcome === 'hold' ? d.reason : null };
       if (task.approval.needed && task.why && task.why[task.approval.rule]) task.approval.reason = task.why[task.approval.rule];
+      record({ agent: a.id, task: task.id, outcome: d.outcome, rule: d.rule, reason: task.approval.reason || d.reason, by: 'rules' });
       task.route = ['inbox', 'beacon'];
       if (task.library) task.route.push('library');
       task.route.push('workshop', 'check');
@@ -118,7 +136,7 @@ export function createSim(seed = 7, opts = {}) {
     const st = task.route[a.step];
     if (st === 'gate' && !task.approved) {
       a.state = 'wait'; a.mood = 'wait'; say(a, 'wait', 3);
-      s.approvals.push(a.id);
+      s.approvals.push(a.id); s.stats.asked++; a.waitFrom = s.t;
       fx.push({ type: 'gate-wait', agent: a.id });
       log('wait', `${name(a)} is at the Gate. ${task.approval.reason}`, a.id, task.id);
       return;
@@ -136,8 +154,9 @@ export function createSim(seed = 7, opts = {}) {
     const st = task.route[a.step];
     if (st === 'inbox') { task.status = 'active'; fx.push({ type: 'pickup', agent: a.id, task: task.id }); }
     if (st === 'beacon') log('plan', `${name(a)} has a plan for ${task.id}`, a.id, task.id);
-    if (st === 'workshop' && task.reach && !canUse(byId[a.id], task.reach.tool)) {
+    if (st === 'workshop' && task.reach && decide({ tool: task.reach.tool }, who(a), s.authority).outcome === 'stop') {
       log('reach', `${name(a)} reached for ${task.reach.what}`, a.id, task.id);
+      record({ agent: a.id, task: task.id, tool: task.reach.tool, noAmount: true, outcome: 'stop', rule: 'badge', reason: `${task.reach.label || TOOLS[task.reach.tool]} is not on ${name(a)}'s badge`, by: 'rules' });
       go(a, 'vault', 'vault'); a.mood = 'sneak'; return;
     }
     if (st === 'check') {
@@ -157,7 +176,8 @@ export function createSim(seed = 7, opts = {}) {
     task.status = 'done'; task.doneAt = s.t; retire(task.id);
     s.stats.shipped++; s.stats.spend = Math.round((s.stats.spend + task.cost) * 100) / 100;
     a.shipped++;
-    const before = levelOf(a.clean).id; a.clean++; const after = levelOf(a.clean);
+    if (task.amount != null) { if (task.approval.needed) s.stats.signed += task.amount; else s.stats.alone += task.amount; }
+    const before = levelOf(a.clean, s.authority).id; a.clean++; const after = levelOf(a.clean, s.authority);
     fx.push({ type: 'launch', agent: a.id, task: task.id, needed: !!task.approval.needed });
     log('ship', `${name(a)} shipped ${task.id}`, a.id, task.id);
     if (after.id !== before) {
@@ -170,6 +190,8 @@ export function createSim(seed = 7, opts = {}) {
   function approve(id) {
     const i = s.approvals.indexOf(id); if (i < 0) return false;
     const a = A(id), task = s.tasks[a.task];
+    const waited = s.t - (a.waitFrom ?? s.t); s.stats.waited += waited; s.stats.answered++;
+    record({ agent: id, task: task.id, outcome: 'approved', rule: task.approval.rule, reason: task.approval.reason, by: 'person', waited });
     s.approvals.splice(i, 1); task.approved = true; s.stats.approved++;
     a.state = 'work'; a.work = STATIONS.gate.dwell; a.mood = 'happy'; say(a, 'thanks');
     fx.push({ type: 'gate-open', agent: id });
@@ -180,6 +202,8 @@ export function createSim(seed = 7, opts = {}) {
   function sendBack(id) {
     const i = s.approvals.indexOf(id); if (i < 0) return false;
     const a = A(id), task = s.tasks[a.task];
+    const waited = s.t - (a.waitFrom ?? s.t); s.stats.waited += waited; s.stats.answered++;
+    record({ agent: id, task: task.id, outcome: 'sent back', rule: task.approval.rule, reason: task.approval.reason, by: 'person', waited });
     s.approvals.splice(i, 1); task.status = 'returned'; s.stats.sentBack++; retire(task.id);
     a.task = null; say(a, 'back'); fx.push({ type: 'return', agent: id, task: task.id });
     log('back', `You sent ${task.id} back. Nothing left the base`, id, task.id);
@@ -193,8 +217,9 @@ export function createSim(seed = 7, opts = {}) {
   function resolve(incidentId, action) {
     const i = s.incidents.findIndex(x => x.id === incidentId); if (i < 0) return false;
     const inc = s.incidents[i], a = A(inc.agent), task = s.tasks[inc.task];
-    s.incidents.splice(i, 1);
+    s.incidents.splice(i, 1); s.stats.waited += s.t - inc.t; s.stats.answered++;
     fx.push({ type: 'release', agent: a.id });
+    record({ agent: a.id, task: task.id, tool: inc.tool, noAmount: true, outcome: action === 'grant' ? 'allowed once' : action === 'pause' ? 'bot paused' : 'kept out', rule: 'badge', reason: `${inc.label} is not on ${name(a)}'s badge`, by: 'person', waited: s.t - inc.t });
     if (action === 'grant') {
       s.stats.granted++; a.state = 'work'; a.goal = 'vault-in'; a.work = STATIONS.vault.dwell; a.mood = 'work'; say(a, 'granted');
       log('grant', `You let ${name(a)} read ${inc.what} once, for ${task.id} only`, a.id, task.id);
@@ -211,14 +236,28 @@ export function createSim(seed = 7, opts = {}) {
     return true;
   }
 
-  function pause(id) { const a = A(id); if (!a || a.paused) return false; a.paused = true; say(a, 'paused'); log('pause', `You paused ${name(a)}`, id); return true; }
-  function resume(id) { const a = A(id); if (!a || !a.paused) return false; a.paused = false; say(a, 'resumed'); log('resume', `You resumed ${name(a)}`, id); return true; }
+  function pause(id) { const a = A(id); if (!a || a.paused) return false; a.paused = true; say(a, 'paused'); log('pause', `You paused ${name(a)}`, id); record({ agent: id, task: a.task, noAmount: true, tool: '-', outcome: 'paused', reason: `${name(a)} was paused by hand`, by: 'person' }); return true; }
+  function resume(id) { const a = A(id); if (!a || !a.paused) return false; a.paused = false; say(a, 'resumed'); log('resume', `You resumed ${name(a)}`, id); record({ agent: id, task: a.task, noAmount: true, tool: '-', outcome: 'resumed', reason: `${name(a)} was resumed by hand`, by: 'person' }); return true; }
   function pauseWhere(prefix) {
     const hit = s.agents.filter(a => !a.paused && byId[a.id].tools.some(t => t.startsWith(prefix)));
     hit.forEach(a => pause(a.id)); return hit.map(a => a.id);
   }
   function resumeAll() { const hit = s.agents.filter(a => a.paused); hit.forEach(a => resume(a.id)); return hit.map(a => a.id); }
-  function revoke(id) { const a = A(id); if (!a) return false; a.clean = 0; log('revoke', `You reset ${name(a)} to Supervised`, id); return true; }
+  function revoke(id) { const a = A(id); if (!a) return false; a.clean = 0; log('revoke', `You reset ${name(a)} to Supervised`, id); record({ agent: id, outcome: 'trust reset', reason: `${name(a)} is back to Supervised`, by: 'person' }); return true; }
+
+  // Swaps the authority table while the base is running. Work already past the decision point keeps the
+  // decision it was given; everything assigned from now on is judged by the new rules.
+  const usd = n => '$' + n.toLocaleString('en-US');
+  function setAuthority(p) {
+    const before = s.authority, next = makeAuthority(p), diff = [];
+    next.levels.forEach((l, i) => { const b = before.levels[i]; if (l.limit !== b.limit) diff.push(`${l.name} limit ${usd(b.limit)} to ${usd(l.limit)}`); if (l.min !== b.min) diff.push(`${l.name} after ${l.min} clean runs (was ${b.min})`); });
+    for (const k of ['money', 'customer']) if (next.rules[k] !== before.rules[k]) diff.push(`${k === 'money' ? 'money rule' : 'customer message rule'} ${next.rules[k] ? 'on' : 'off'}`);
+    if (!diff.length) return false;
+    s.authority = next;
+    log('authority', `You changed what the crew may do alone: ${diff.join(', ')}`);
+    record({ outcome: 'authority changed', reason: diff.join(', '), by: 'person' });
+    return true;
+  }
 
   function step(dt) {
     s.t += dt;
@@ -237,10 +276,11 @@ export function createSim(seed = 7, opts = {}) {
 
   return {
     get state() { return s; }, fx, crew: CREW,
-    step, dispatch, approve, sendBack, resolve, pause, resume, pauseWhere, resumeAll, revoke,
+    get ledger() { return ledger; },
+    step, dispatch, approve, sendBack, resolve, pause, resume, pauseWhere, resumeAll, revoke, setAuthority,
     setAuto(v) { s.auto = !!v; },
     snapshot() { return JSON.parse(JSON.stringify(s)); },
-    restore(snap) { s = JSON.parse(JSON.stringify(snap)); },
+    restore(snap) { s = JSON.parse(JSON.stringify(snap)); record({ outcome: 'state restored', reason: `The base was put back to ${Math.round(s.t)} seconds in`, by: 'person' }); },
   };
 }
 

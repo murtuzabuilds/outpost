@@ -37,12 +37,14 @@ export function ask(text, api) {
   }
   if (/risky|refund|export|close account|danger/.test(q) && /send|new|give|try|make/.test(q)) { const t = api.dispatch(/export|data/.test(q) ? 'export' : /close/.test(q) ? 'close' : 'refund'); return `Sent ${t.id}: ${t.title}. Watch the Gate.`; }
   if (/\b(send|new|dispatch|add)\b.*\b(task|job|work|one)\b|^send/.test(q)) { const t = api.dispatch(); return `Sent ${t.id}: ${t.title}.`; }
+  if (/authority|autonomy|policy|lab|what.?if|simulat|limit.*(change|raise|lower)|(change|raise|lower).*limit/.test(q) && !bot) { api.openPanel('lab'); return 'The Autonomy lab. Set what the crew may do alone and replay 20 shifts before anything changes.'; }
+  if (/logbook|ledger|audit|export|history|decisions?\b|who (approved|decided)/.test(q)) { api.openPanel('ledger'); return 'The logbook: every decision, the rule that fired and who made it.'; }
   if (/roll ?call|list|table|everyone|all bots/.test(q)) { api.openList(); return 'Roll call. Everyone, in one list.'; }
   if (/rewind|what (just )?happened|go back|replay/.test(q)) { api.rewind(25); return 'Rewound 25 seconds. Drag the timeline to look around, then press the button on its left to return.'; }
   if (/trust|level|limit/.test(q) && bot) { api.select(bot.id); return `${bot.name}'s trust and limits are in the panel.`; }
   if (bot) { api.select(bot.id); return `${bot.name}: ${statusOf(s, bot.id).toLowerCase()}.`; }
   if (/gate|approv/.test(q)) { api.focus('gate'); return 'The Gate is where risky work waits for you.'; }
   if (/vault|secret|off.?limits/.test(q)) { api.focus('vault'); return 'The Vault holds what no bot may touch without being let in.'; }
-  if (/help|what can|how/.test(q)) return 'Try: "who needs me?", "where is Kite?", "pause everything touching payments", "send a risky task", "rewind".';
+  if (/help|what can|how/.test(q)) return 'Try: "who needs me?", "where is Kite?", "pause everything touching payments", "open the lab", "show the logbook", "rewind".';
   return 'I can find bots, pause them, send tasks and rewind. Try "who needs me?"';
 }

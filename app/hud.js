@@ -1,16 +1,17 @@
 // The panels that sit on top of the scene. Each function returns HTML for one panel from the
 // same state the 3D view draws, so the list and the world can never disagree.
-import { CREW, byId, TOOLS, STATIONS, LEVELS, levelOf, nextLevel, statusOf } from '../src/index.js';
+import { CREW, byId, TOOLS, STATIONS, levelOf, nextLevel, statusOf, authorityId, verifyLedger } from '../src/index.js';
 
 export const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // A workplace can rename the crew's jobs, reword the panels and set the clock.
-let META = {}, WORDS = { does: {}, vault: ['Full customer records', 'Underwriting models'], rules: null }, CLOCK0 = 9 * 3600;
+let META = {}, WORDS = { does: {}, vault: ['Full customer records', 'Underwriting models'], rules: null, tools: null }, CLOCK0 = 9 * 3600;
 export const setTheme = (meta, words) => { META = meta || {}; WORDS = { ...WORDS, ...(words || {}) }; };
 export const setClock = seconds => { CLOCK0 = seconds; };
 const who = id => META[id] ? { ...byId[id], ...META[id] } : byId[id];
 export const clock = t => { const s = Math.floor(CLOCK0 + t); return [Math.floor(s / 3600) % 24, Math.floor(s / 60) % 60, s % 60].map(n => String(n).padStart(2, '0')).join(':'); };
 const av = c => `<i class="av" style="--c:${c}"></i>`;
-const pips = clean => { const n = LEVELS.indexOf(levelOf(clean)) + 1; return `<span class="lv" title="${levelOf(clean).name}">${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`; };
+const pips = (clean, authority) => { const lv = levelOf(clean, authority), n = authority.levels.indexOf(lv) + 1; return `<span class="lv" title="${lv.name}">${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`; };
+const money = n => '$' + Math.round(n).toLocaleString('en-US');
 const flag = (v, a) => v.approvals.includes(a.id) ? 'need' : v.incidents.some(i => i.agent === a.id) ? 'held' : a.paused ? 'paused' : '';
 
 export function stats(v, sim) {
@@ -33,33 +34,40 @@ function brief(v, a) {
 export function crew(v, sel) {
   return `<h2>Crew<span>${CREW.length} bots</span></h2>` + v.agents.map(a => {
     const c = byId[a.id];
-    return `<button type="button" class="cw ${flag(v, a)} ${sel && sel.type === 'bot' && sel.id === a.id ? 'sel' : ''}" data-bot="${a.id}" style="--c:${c.color}">${av(c.color)}<span class="n"><b>${c.name}</b><em>${esc(brief(v, a))}</em></span>${pips(a.clean)}</button>`;
+    return `<button type="button" class="cw ${flag(v, a)} ${sel && sel.type === 'bot' && sel.id === a.id ? 'sel' : ''}" data-bot="${a.id}" style="--c:${c.color}">${av(c.color)}<span class="n"><b>${c.name}</b><em>${esc(brief(v, a))}</em></span>${pips(a.clean, v.authority)}</button>`;
   }).join('');
 }
 
 const NAMES = { inbox: 'Inbox', beacon: 'Briefing', library: 'Library', workshop: 'Workshop', check: 'Checkpoint', gate: 'Gate', launch: 'Launchpad' };
 
 function botPanel(v, id, past) {
-  const a = v.agents.find(x => x.id === id), c = who(id), task = a.task && v.tasks[a.task], lv = levelOf(a.clean), nx = nextLevel(a.clean), li = LEVELS.indexOf(lv);
+  const a = v.agents.find(x => x.id === id), c = who(id), task = a.task && v.tasks[a.task], lv = levelOf(a.clean, v.authority), nx = nextLevel(a.clean, v.authority), li = v.authority.levels.indexOf(lv);
   const route = task && task.route ? `<ol class="route">${task.route.map((s, i) => `<li class="${i < a.step ? 'done' : i === a.step ? 'cur' : ''} ${s === 'gate' ? 'g' : ''}">${NAMES[s]}</li>`).join('')}</ol>` : '';
-  const limit = lv.limit ? `Moves up to $${lv.limit} without asking.` : 'Asks before moving any money or messaging a customer.';
+  const limit = !v.authority.rules.money ? 'No money limit: the money rule is switched off.' : lv.limit ? `Moves up to ${money(lv.limit)} without asking.` : lv.id === 'supervised' && v.authority.rules.customer ? 'Asks before moving any money or messaging a customer.' : 'Asks before moving any money.';
   return `<div class="in-h" style="--c:${c.color}">${av(c.color)}<div><b>${c.name}</b><span>${esc(c.job)}. Owned by ${esc(c.owner)}${c.team ? ', ' + esc(c.team) : ''}</span></div><button type="button" class="x" data-act="close" aria-label="Close">&times;</button></div>
   <p class="quirk">${esc(c.quirk)}</p>
   <div class="now"><small>Right now</small><b>${esc(statusOf(v, id))}</b>${task ? `<span class="task"><code>${task.id}</code> ${esc(task.title)}</span>` : `<span class="task">No task. ${a.shipped} shipped so far.</span>`}</div>
   ${route}
-  <div class="lvl" style="--c:${c.color}"><small>Trust, earned by clean runs</small><div class="lvbar">${LEVELS.map((l, i) => `<i class="${i <= li ? 'on' : ''}"></i>`).join('')}</div><b>${lv.name}</b><span>${limit} ${nx ? `${nx.runs} more clean run${nx.runs > 1 ? 's' : ''} to ${nx.level.name}.` : 'Top level.'}</span></div>
+  <div class="lvl" style="--c:${c.color}"><small>Trust, earned by clean runs</small><div class="lvbar">${v.authority.levels.map((l, i) => `<i class="${i <= li ? 'on' : ''}"></i>`).join('')}</div><b>${lv.name}</b><span>${limit} ${nx ? `${nx.runs} more clean run${nx.runs > 1 ? 's' : ''} to ${nx.level.name}.` : 'Top level.'}</span></div>
   <div class="badge"><small>Badge: what it may touch</small><ul>${c.tools.map(t => `<li>${esc(TOOLS[t])}</li>`).join('')}</ul></div>
   <div class="acts">${past ? '' : `<button type="button" class="btn sm ${a.paused ? 'pri' : ''}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${id}">${a.paused ? 'Resume' : 'Pause'}</button>${a.clean > 0 ? `<button type="button" class="btn sm ghost" data-act="revoke" data-id="${id}">Reset trust</button>` : ''}`}</div>`;
 }
 
-const RULES = ['Data leaving the company: always.', 'Anything that cannot be undone: always.', 'Money over the bot\'s limit: $0, $200 or $500 by trust level.', 'Customer messages: only while a bot is Supervised.'];
+const RULES = ['Data leaving the company: always.', 'Anything that cannot be undone: always.', '', 'Customer messages: only while a bot is Supervised.'];
+// The Gate panel always states the rules as they are right now, so a change to the limits shows up here too.
+const rulesNow = authority => {
+  const r = (WORDS.rules || RULES).slice(), lim = authority.levels.map(l => money(l.limit));
+  r[2] = authority.rules.money ? `Money over the bot's limit: ${lim[0]}, ${lim[1]} or ${lim[2]} by trust level.` : 'Money: no rule. It is switched off right now.';
+  if (!authority.rules.customer) r[3] = r[3].split(':')[0] + ': no rule. It is switched off right now.';
+  return r;
+};
 
 function stationPanel(v, id) {
   const s = STATIONS[id];
   const here = v.agents.filter(a => (a.state !== 'travel' && a.at === id));
   let extra = '';
   if (id === 'inbox') extra = `<div><small>Waiting for a bot</small><div class="q">${v.queue.length ? v.queue.map(t => `<div><code>${t}</code>${esc(v.tasks[t].title)}</div>`).join('') : '<div>Nothing waiting.</div>'}</div></div>`;
-  if (id === 'gate') extra = `<div><small>When a person has to say yes</small><ul class="rules">${(WORDS.rules || RULES).map(r => `<li>${r}</li>`).join('')}</ul></div><p>${v.stats.approved} approved, ${v.stats.sentBack} sent back.</p>`;
+  if (id === 'gate') extra = `<div><small>When a person has to say yes</small><ul class="rules">${rulesNow(v.authority).map(r => `<li>${r}</li>`).join('')}</ul></div><p>${v.stats.approved} approved, ${v.stats.sentBack} sent back.</p>`;
   if (id === 'vault') extra = `<div><small>Inside</small><ul class="rules">${WORDS.vault.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><p>Nobody on the crew holds a key. ${v.stats.blocked} kept out, ${v.stats.granted} let in once.</p>`;
   if (id === 'check') extra = `<p>Work that fails goes back to the Workshop and is checked again.</p>`;
   if (id === 'launch') extra = `<p>${v.stats.shipped} shipped today, costing $${v.stats.spend.toFixed(2)} in model use.</p>`;
@@ -74,7 +82,7 @@ export function inspect(v, sel, past) {
 }
 
 export function alerts(v, past, ago, max = 2) {
-  if (past) return `<div class="al"><i class="av" style="--c:#FFC857"></i><div class="t"><b>You are looking at ${ago} seconds ago</b><span>Drag the timeline to move through it. Nothing changes while you look.</span></div><div class="b"><button type="button" class="btn pri" data-act="live">Back to live</button></div></div>`;
+  if (past) return `<div class="al past"><i class="av" style="--c:#6F86FF"></i><div class="t"><b>You are looking at ${ago} seconds ago</b><span>Drag the timeline to move through it. Nothing changes while you look.</span></div><div class="b"><button type="button" class="btn pri" data-act="live">Back to live</button></div></div>`;
   const cards = [];
   for (const inc of v.incidents) {
     const c = byId[inc.agent];
@@ -92,16 +100,96 @@ export function radio(v) {
   return v.log.slice(-4).map(l => `<p class="k-${l.kind}"><time>${clock(l.t)}</time>${esc(l.text)}</p>`).join('');
 }
 
+const TABS = [['roll', 'Roll call'], ['lab', 'Autonomy lab'], ['ledger', 'Logbook']];
+const head = (tab, sub) => `<div class="list-h"><div class="tabs" role="tablist">${TABS.map(([k, n]) => `<button type="button" role="tab" aria-selected="${k === tab}" class="tab ${k === tab ? 'on' : ''}" data-tab="${k}">${n}</button>`).join('')}</div><span class="sub">${sub}</span><button type="button" class="x" data-act="closelist" aria-label="Close">&times;</button></div>`;
+
 export function list(v, past) {
   const rows = v.agents.map(a => {
-    const c = who(a.id), lv = levelOf(a.clean), task = a.task && v.tasks[a.task], need = v.approvals.includes(a.id), inc = v.incidents.find(x => x.agent === a.id);
-    return `<div class="tr ${flag(v, a)}"><span class="nm">${av(c.color)}${c.name}</span><span>${esc(c.job)}</span><span class="do">${esc(statusOf(v, a.id))}${task ? `<em>${esc(task.title)}</em>` : ''}</span><span>${lv.name}</span><span class="num">$${lv.limit}</span><span class="num">${a.shipped}</span><span class="ac">${past ? '' : need ? `<button type="button" class="btn sm pri" data-approve="${a.id}">Approve</button><button type="button" class="btn sm ghost" data-back="${a.id}">Send back</button>` : inc ? `<button type="button" class="btn sm pri" data-res="${inc.id}:deny">Keep it out</button><button type="button" class="btn sm ghost" data-res="${inc.id}:grant">Allow once</button>` : `<button type="button" class="btn sm ${a.paused ? 'pri' : 'ghost'}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${a.id}">${a.paused ? 'Resume' : 'Pause'}</button>`}<button type="button" class="btn sm ghost" data-bot="${a.id}">Find</button></span></div>`;
+    const c = who(a.id), lv = levelOf(a.clean, v.authority), task = a.task && v.tasks[a.task], need = v.approvals.includes(a.id), inc = v.incidents.find(x => x.agent === a.id);
+    return `<div class="tr ${flag(v, a)}"><span class="nm">${av(c.color)}${c.name}</span><span>${esc(c.job)}</span><span class="do">${esc(statusOf(v, a.id))}${task ? `<em>${esc(task.title)}</em>` : ''}</span><span>${lv.name}</span><span class="num">${v.authority.rules.money ? money(lv.limit) : 'none'}</span><span class="num">${a.shipped}</span><span class="ac">${past ? '' : need ? `<button type="button" class="btn sm pri" data-approve="${a.id}">Approve</button><button type="button" class="btn sm ghost" data-back="${a.id}">Send back</button>` : inc ? `<button type="button" class="btn sm pri" data-res="${inc.id}:deny">Keep it out</button><button type="button" class="btn sm ghost" data-res="${inc.id}:grant">Allow once</button>` : `<button type="button" class="btn sm ${a.paused ? 'pri' : 'ghost'}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${a.id}">${a.paused ? 'Resume' : 'Pause'}</button>`}<button type="button" class="btn sm ghost" data-bot="${a.id}">Find</button></span></div>`;
   }).join('');
-  return `<div class="list-h"><div><b>Roll call</b><span>The same crew and the same buttons, as a plain list.</span></div><button type="button" class="x" data-act="closelist" aria-label="Close">&times;</button></div>
+  return `${head('roll', 'The same crew and the same buttons, as a plain list.')}
   <div class="scroll"><div class="tbl"><div class="tr h"><span>Bot</span><span>Job</span><span>Doing now</span><span>Trust</span><span>Limit</span><span>Shipped</span><span></span></div>${rows}</div></div>`;
 }
 
 export function marks(v, t0, t1) {
   return v.log.filter(l => l.t >= t0 && l.t <= t1 && (l.kind === 'wait' || l.kind === 'incident' || l.kind === 'ship'))
     .map(l => `<i class="k-${l.kind}" style="left:${(((l.t - t0) / Math.max(1, t1 - t0)) * 100).toFixed(1)}%"></i>`).join('');
+}
+
+// ---------- Autonomy lab ----------
+// `L` is the lab's own state: the draft authority table, how fast the stand-in person answers, and the last
+// result. The sliders are not re-rendered while they move; main.js updates their labels in place.
+const ANSWERS = [[0, 'At once'], [15, '15 s'], [60, '1 min'], [180, '3 min'], [Infinity, 'Nobody']];
+const f1 = n => n.toFixed(1), pct = n => Math.round(n * 100) + '%', sec = n => f1(n) + ' s';
+const signed = (d, fmt) => Math.abs(d) < 1e-9 ? 'no change' : (d > 0 ? '+' : '\u2212') + fmt(Math.abs(d));
+const METRICS = [
+  ['Work shipped per shift', 'shipped', f1], ['Times the crew asks you per shift', 'asked', f1], ['Share of work that needs you', 'share', pct, d => signed(d * 100, n => Math.round(n) + ' pts')],
+  ['Crew time lost waiting per shift', 'lost', n => f1(n / 60) + ' min', d => signed(d / 60, n => f1(n) + ' min')], ['Money moved without you per shift', 'alone', money], ['Money you signed off per shift', 'signed', money],
+];
+
+function reading(r) {
+  const a = r.now, b = r.next;
+  if (a.authority === b.authority) return 'The draft is what the base is running now, so both columns match. Change a limit or a rule and replay again.';
+  const dAsk = b.asked - a.asked, dAlone = b.alone - a.alone, dShip = b.shipped - a.shipped, rel = a.shipped ? dShip / a.shipped : 0;
+  const ask = Math.abs(dAsk) < 0.05 ? 'The crew would ask you about as often as now' : `The crew would ask you ${f1(Math.abs(dAsk))} ${dAsk < 0 ? 'fewer' : 'more'} times a shift`;
+  const alone = Math.abs(dAlone) < 1 ? 'the money moving without a person would not change' : `${money(Math.abs(dAlone))} ${dAlone > 0 ? 'more' : 'less'} would move without a person`;
+  const ship = Math.abs(rel) < 0.02 ? 'Output barely moves' : `Output ${rel > 0 ? 'rises' : 'falls'} by ${Math.round(Math.abs(rel) * 100)}%`;
+  return `${ask}, and ${alone}. ${ship}.`;
+}
+
+export function lab(L, live, past) {
+  const d = L.draft, same = authorityId(d) === authorityId(live), r = L.res;
+  const rows = d.levels.map((l, i) => `<div class="lvrow"><b>${l.name}</b>
+      <div class="step">${i === 0 ? '<span>from the first run</span>' : `<button type="button" data-lab="min:${i}:-1" aria-label="Fewer clean runs to reach ${l.name}">&minus;</button><output>${l.min}</output><button type="button" data-lab="min:${i}:1" aria-label="More clean runs to reach ${l.name}">+</button><span>clean runs</span>`}</div>
+      <label class="rng"><span>may move alone</span><input type="range" min="0" max="1000" step="25" value="${l.limit}" data-limit="${i}" aria-label="${l.name} money limit" ${d.rules.money ? '' : 'disabled'}><output data-lim="${i}">${money(l.limit)}</output></label></div>`).join('');
+  const sw = (k, label) => `<button type="button" class="sw ${d.rules[k] ? 'on' : ''}" role="switch" aria-checked="${d.rules[k]}" data-lab="rule:${k}"><i></i><span>${label}</span></button>`;
+  const lock = label => `<div class="sw lock"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.6" fill="currentColor"/><path d="M5.2 7V5a2.8 2.8 0 0 1 5.6 0v2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>${label}</span><em>always on</em></div>`;
+  const table = r ? `<div class="res"><div class="rr h"><span></span><span>Now</span><span>Draft</span><span>Change</span></div>${METRICS.map(([label, k, fmt, dfmt]) => { const dv = r.next[k] - r.now[k]; return `<div class="rr"><span>${label}</span><span class="num">${fmt(r.now[k])}</span><span class="num">${fmt(r.next[k])}</span><span class="num ch">${dfmt ? dfmt(dv) : signed(dv, fmt)}</span></div>`; }).join('')}</div>
+      <p class="read">${reading(r)}</p>
+      <p class="fine">Simulated work. Both columns replay the same ${r.shifts} ten-minute shifts with a person answering ${r.answer === Infinity ? 'never' : r.answer === 0 ? 'at once' : 'within ' + (r.answer >= 60 ? r.answer / 60 + ' min' : r.answer + ' s')}, so the difference is the change you made. <code>${r.now.authority}</code> against <code>${r.next.authority}</code>.</p>`
+    : `<div class="empty"><b>How much can this crew do alone?</b><span>Move a limit, change how fast trust is earned or switch a rule, then replay 20 shifts as the base runs now and as your draft would run it. You see what it does to output, to your own time and to the money moving without you, before anything changes.</span></div>`;
+  return `${head('lab', 'Set what the crew may do alone, then replay 20 shifts to see what it does to your day.')}
+  <div class="lab">
+    <div class="lab-l">
+      <small>Authority by trust level</small>${rows}
+      <small>What waits for a person</small>
+      <div class="sws">${sw('money', 'Money over the bot\'s limit')}${sw('customer', 'Customer messages from a Supervised bot')}${lock('Anything sent outside the company')}${lock('Anything that cannot be undone')}</div>
+      <small>A person answers</small>
+      <div class="seg">${ANSWERS.map(([v, n]) => `<button type="button" class="${L.answer === v ? 'on' : ''}" data-lab="answer:${v}">${n}</button>`).join('')}</div>
+      <div class="acts"><button type="button" class="btn sm pri" data-lab="test" ${L.running ? 'disabled' : ''}>${L.running ? 'Replaying 20 shifts' : 'Replay 20 shifts'}</button><button type="button" class="btn sm" data-lab="apply" ${same || past ? 'disabled' : ''}>Apply to the base</button><button type="button" class="btn sm ghost" data-lab="reset" ${same ? 'disabled' : ''}>Reset</button></div>
+      <div class="prog" aria-hidden="true"><i data-prog style="width:${L.running ? 4 : 0}%"></i></div>
+      <p class="fine">Draft <code>${authorityId(d)}</code>${same ? ', the same as the base.' : `. The base is running <code>${authorityId(live)}</code>.`}</p>
+    </div>
+    <div class="lab-r">${table}</div>
+  </div>`;
+}
+
+// ---------- Logbook ----------
+const OUT = { allow: 'Allowed', hold: 'Held', stop: 'Stopped', approved: 'Approved', 'sent back': 'Sent back', 'kept out': 'Kept out', 'allowed once': 'Allowed once', 'bot paused': 'Bot paused', 'authority changed': 'Limits changed', 'trust reset': 'Trust reset', paused: 'Paused', resumed: 'Resumed', 'state restored': 'Restored' };
+const FILTERS = [['all', 'All'], ['hold', 'Held'], ['stop', 'Stopped'], ['person', 'By a person']];
+const pass = (e, f) => f === 'hold' ? e.outcome === 'hold' : f === 'stop' ? e.outcome === 'stop' : f === 'person' ? e.by === 'person' : true;
+
+export function ledger(entries, filter, v) {
+  const auth_ = entries.filter(e => e.by === 'rules'), n = k => auth_.filter(e => e.outcome === k).length;
+  const answered = entries.filter(e => e.waited != null), wait = answered.length ? answered.reduce((t, e) => t + e.waited, 0) / answered.length : 0;
+  const check = verifyLedger(entries), ok = !check.breaks.length;
+  const shown = entries.filter(e => pass(e, filter)), rows = shown.slice(-80).reverse().map(e => {
+    const c = e.agent ? byId[e.agent] : null, what = e.title || e.reason || '';
+    return `<div class="lr o-${e.outcome.replace(/ /g, '-')}"><span class="num">${clock(e.t)}</span><span class="nm">${c ? av(c.color) + c.name : 'You'}</span><span class="do">${esc(what)}${e.tool ? `<em>${esc((WORDS.tools && WORDS.tools[e.tool]) || e.tool)}${e.amount != null ? ' \u00b7 ' + money(e.amount) : ''}</em>` : ''}</span><span><i class="oc">${OUT[e.outcome] || e.outcome}</i></span><span class="why">${e.title && e.reason ? esc(e.reason) : ''}${e.waited != null ? `<em>answered in ${f1(e.waited)} s</em>` : ''}</span><span class="by">${e.by === 'person' ? 'You' : 'Rules'}<em>${e.authority}</em></span></div>`;
+  }).join('');
+  return `${head('ledger', 'Every decision on this shift, with the rule that fired and who made it.')}
+  <div class="led-h">
+    <div class="sum"><div><b>${auth_.length}</b><span>checked by the rules</span></div><div><b>${n('allow')}</b><span>allowed alone</span></div><div><b>${n('hold')}</b><span>held for a person</span></div><div><b>${n('stop')}</b><span>stopped at the Vault</span></div><div><b>${answered.length ? f1(wait) + ' s' : '\u2013'}</b><span>average wait for an answer</span></div></div>
+    <div class="chk ${ok ? 'ok' : 'bad'}"><i></i><span>${ok ? `Self-check passed: ${check.checked} decisions, no broken promises.` : `Self-check found ${check.breaks.length} broken promise${check.breaks.length > 1 ? 's' : ''}.`}</span></div>
+    <div class="fl">${FILTERS.map(([k, name]) => `<button type="button" class="${filter === k ? 'on' : ''}" data-filter="${k}">${name}</button>`).join('')}<button type="button" class="btn sm" data-act="export">Export JSON</button></div>
+  </div>
+  <div class="scroll"><div class="ltbl"><div class="lr h"><span>Time</span><span>Who</span><span>Action</span><span>Decision</span><span>Why</span><span>Decided by</span></div>${rows || '<p class="none">Nothing here yet.</p>'}</div>${shown.length > 80 ? `<p class="none">Showing the latest 80 of ${shown.length}. The export has all of them.</p>` : ''}</div>`;
+}
+
+// Shown instead of a download when the base runs inside another page's frame.
+export function exportView(text) {
+  return `${head('ledger', 'The logbook as JSON.')}
+  <div class="exp"><div class="exp-h"><span>This page runs inside a frame that cannot save files, so here is the export to copy.</span><button type="button" class="btn sm pri" data-act="copyexp">Copy</button><button type="button" class="btn sm ghost" data-act="closeexp">Back to the logbook</button></div>
+  <textarea readonly spellcheck="false" aria-label="Logbook as JSON">${esc(text)}</textarea></div>`;
 }

@@ -1,7 +1,7 @@
 // The crew. Each bot is a little hovering robot with a screen for a face, a hat of its own,
 // and a parcel it tows behind it. Everything it shows comes from the simulation state.
 import { T, col, std, lit, add, mesh, box, cyl, ball, cone, torus, sprite, canvasTex, glowTex, clamp, damp } from './gfx.js';
-import { levelOf, LEVELS } from '../src/index.js';
+import { levelOf, DEFAULT_AUTHORITY } from '../src/index.js';
 import { P } from './palette.js';
 
 const INK = '#04060D', EYE = P.ice;
@@ -109,7 +109,7 @@ export function makeBot(spec, i, scene) {
     if (mood !== B.mood) { B.mood = mood; drawFace(fc.g, mood, B.blink); fc.tex.needsUpdate = true; }
 
     // trust shown as pips circling the hat
-    const lv = LEVELS.indexOf(levelOf(a.clean)) + 1, py = B0.top + H.h + 0.45;
+    const auth_ = o.authority || DEFAULT_AUTHORITY, lv = auth_.levels.indexOf(levelOf(a.clean, auth_)) + 1, py = B0.top + H.h + 0.45;
     pips.forEach((p, j) => { p.visible = j < lv; const an = t * 1.6 + j * (6.283 / lv); p.position.set(Math.cos(an) * 0.62, py + Math.sin(t * 3 + j) * 0.05, Math.sin(an) * 0.62); p.rotation.y = t * 2; });
 
     // parcel on a tether

@@ -43,5 +43,7 @@ export const SITE_WORDS = {
     launch: 'Approved work leaves the site.',
   },
   vault: ['Private employer work', 'The private inbox'],
+  // how the ledger names each tool on the site (the engine's own tool ids are unchanged)
+  tools: { 'claims.write': 'inbox.sort', 'fraud.flag': 'spam.flag', 'calendar.write': 'calendar.write', 'docs.write': 'pages.write', 'crm.write': 'contacts.write', 'ledger.write': 'site.check', 'email.send': 'email.send', 'payments.refund': 'payments.buy', 'payments.pay': 'payments.pay', 'data.export': 'files.send', 'accounts.close': 'files.delete', 'crm.records': 'inbox.private', 'underwriting.models': 'work.private' },
   rules: ['A file leaving the site: always.', 'Anything that cannot be undone: always.', 'Money over the bot\'s limit: $0, $200 or $500 by trust level.', 'Messages to visitors: only while a bot is Supervised.'],
 };

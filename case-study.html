@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow, noarchive">
-<meta name="description" content="Outpost case study: how one person can supervise a crew of AI agents, designed as a place you can look at and run.">
+<meta name="description" content="Outpost case study: the control room for a person who runs a crew of AI agents. Limits of authority, sign-off, a self-checking logbook, and a lab that tests a rule change before it goes live.">
 <meta name="theme-color" content="#05060A">
 <link rel="icon" href="brand/favicon.svg">
 <title>Outpost case study</title>
@@ -52,6 +52,43 @@ ol.rules li::before{content:"0" counter(r);font:400 11px var(--mono);letter-spac
 ul{margin:0 0 16px;padding-left:20px;color:var(--ink-2)}
 li{margin-bottom:6px}
 footer{margin-top:84px;padding-top:22px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-3);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+.facts{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:36px 0 0}
+.facts div{padding:18px 16px 18px 0}.facts div+div{padding-left:16px;border-left:1px solid var(--line)}
+.facts b{display:block;font-family:var(--serif);font-size:34px;font-weight:400;line-height:1;letter-spacing:-.01em}
+.facts span{display:block;font-size:13px;line-height:1.4;color:var(--ink-2);margin-top:8px}
+.gaps{display:grid;gap:0;margin:26px 0;border-top:1px solid var(--line);counter-reset:g}
+.gap{counter-increment:g;display:grid;grid-template-columns:34px 1fr;gap:10px;border-bottom:1px solid var(--line);padding:18px 0}
+.gap::before{content:"0" counter(g);font:400 11px var(--mono);letter-spacing:.1em;color:var(--ink-3);padding-top:5px}
+.gap h3{margin:0 0 4px}.gap p{margin:0;font-size:16px}
+table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:15px}
+table.t th{font:400 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:10px 12px 10px 0;border-bottom:1px solid var(--line);vertical-align:bottom}
+table.t td{padding:13px 12px 13px 0;border-bottom:1px solid var(--line);color:var(--ink-2);vertical-align:top}
+table.t td:first-child{color:var(--ink)}
+table.t .n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.t td.n{color:var(--ink)}
+table.t tr.hl td{background:rgba(111,134,255,.07)}
+table.t small{display:block;font-size:12.5px;color:var(--ink-3)}
+.scroll{overflow-x:auto}
+pre.code{margin:22px 0;padding:18px 20px;border:1px solid var(--line);border-radius:14px;background:#0A0C13;font:400 13px/1.65 var(--mono);color:#C9D2E6;overflow-x:auto;white-space:pre;tab-size:2}
+pre.code .c{color:var(--ink-3)}pre.code .k{color:#AEBBFF}pre.code .s{color:#E8D9A8}
+code{font:400 .88em var(--mono);color:var(--ink)}
+.callout{margin:26px 0;padding:20px 22px;border:1px solid rgba(111,134,255,.4);border-radius:14px;background:rgba(111,134,255,.06)}
+.callout small{font:400 10px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:#AEBBFF;display:block;margin-bottom:8px}
+.callout p{margin:0;font-family:var(--serif);font-size:25px;line-height:1.2;color:var(--ink);letter-spacing:-.005em}
+.dia{margin:34px 0;border:1px solid var(--line);border-radius:14px;background:#0A0C13;padding:10px;overflow-x:auto}
+.dia svg{display:block;width:100%;min-width:760px;height:auto}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:26px 0;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.vs>div{padding:22px 22px 20px}.vs>div+div{border-left:1px solid var(--line)}
+.vs h3{font-family:var(--serif);font-size:28px;font-weight:400;margin:0 0 2px}
+.vs .w{font:400 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin:0 0 14px}
+.vs dl{margin:0;display:grid;gap:11px}.vs dt{font:400 10px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}.vs dd{margin:2px 0 0;font-size:15px;color:var(--ink-2);line-height:1.45}
+.vs .u h3{color:#F5E6C8}.vs .o h3{color:#AEBBFF}
+.join{margin:-8px 0 26px;padding:18px 22px;border:1px solid var(--line);border-radius:14px;font-size:16px;color:var(--ink-2)}
+.join b{color:var(--ink);font-weight:500}
+ol.src{margin:18px 0;padding-left:20px;font-size:14px;color:var(--ink-3)}ol.src li{margin-bottom:8px}ol.src a{color:var(--ink-2)}
+sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px}
+@media (max-width:700px){.facts{grid-template-columns:1fr 1fr}.facts div:nth-child(3){border-left:0;padding-left:0}.facts div:nth-child(n+3){border-top:1px solid var(--line)}.vs{grid-template-columns:1fr}.vs>div+div{border-left:0;border-top:1px solid var(--line)}.callout p{font-size:21px}table.t{font-size:14px}}
 </style>
 </head>
 <body>
@@ -62,87 +99,235 @@ footer{margin-top:84px;padding-top:22px;border-top:1px solid var(--line);font-si
   </header>
 
   <div class="col">
-    <small class="k">Agent management, concept build, 2026</small>
-    <h1>How does one person supervise a crew of agents?</h1>
-    <p class="lede">Outpost turns a team of AI agents into a place you can look at. Each bot is something you can click, where it stands tells you what it is doing, and the risky calls stop and wait for you.</p>
-    <p>I designed and built it end to end: the product idea, the rules, the simulation, the 3D base, the interface and the brand.</p>
+    <small class="k">Agent operations, product build, 2026</small>
+    <h1>Agents are becoming staff. Nobody gave their manager any tools.</h1>
+    <p class="lede">Outpost is the control room for the person who runs a crew of AI agents. It shows who is working and who is waiting, lets each agent act alone up to a limit it has earned, holds the calls that need a signature, keeps a record of every decision, and lets you test a change to those limits on replayed shifts before it goes live.</p>
+    <p>I designed and built it end to end: the product idea, the rules, the engine, the 3D base, the interface and the brand.</p>
+    <div class="facts">
+      <div><b>3 answers</b><span>Every action gets one: allow, hold for a person, or stop.</span></div>
+      <div><b>0 models</b><span>in the path that decides. The rules are plain, tested code.</span></div>
+      <div><b>20 shifts</b><span>replayed to test a change before it is applied.</span></div>
+      <div><b>49 tests</b><span>including sweeps of 20,000 random actions. None got past a locked rule.</span></div>
+    </div>
   </div>
 
   <figure><img src="docs/overview.webp" alt="The Outpost base seen from above: eight bots moving between stations, with one waiting at the Gate" width="1440" height="900"><figcaption>The base at Kestrel Mutual, a fictional insurer. Juno is waiting at the Gate with a refund over its limit.</figcaption></figure>
 
   <div class="col">
     <h2>The problem</h2>
-    <p>Companies are starting to run agents that do real work: sort claims, answer customers, move money. Managing them has become a product category of its own. Microsoft, for one, describes Agent 365 as <a href="https://www.microsoft.com/en-us/microsoft-365/blog/2025/11/18/microsoft-agent-365-the-control-plane-for-ai-agents/">the control plane for AI agents</a>.</p>
-    <p>Most of these tools show agents the way software has always shown things: tables, logs and charts. That is fine for one agent. It gets hard when one person answers for a dozen, because the three things that matter most are the easiest to miss in a table:</p>
-    <ul>
-      <li><strong>Who is waiting on me?</strong></li>
-      <li><strong>Who is stuck?</strong></li>
-      <li><strong>Who just reached for something they should not touch?</strong></li>
-    </ul>
+    <p>Agents now do real work: sort claims, answer customers, move money. In Microsoft's 2025 Work Trend Index, 46% of leaders said their organisation already uses agents to fully automate whole workstreams, and leaders expect their teams to be training agents (41%) and managing them (36%) within five years.<sup><a href="#s1">1</a></sup> Gartner expects at least 15% of day-to-day work decisions to be made by agents by 2028, up from none in 2024. The same release predicts that more than 40% of agentic AI projects will be cancelled by the end of 2027, over rising costs, unclear value or weak risk controls.<sup><a href="#s2">2</a></sup></p>
+    <p>So a new job is appearing: the person who answers for what a crew of agents does. That person has a manager's problem and none of a manager's tools.</p>
+    <div class="gaps">
+      <div class="gap"><div><h3>They cannot see who needs them</h3><p>A dozen agents in a table of logs all look alike. A blocked agent looks the same as a busy one, and a blocked agent produces nothing. In my simulation, a crew whose person never answers ships a third of what it could.</p></div></div>
+      <div class="gap"><div><h3>Agents have no limits of authority</h3><p>People do. A new hire cannot sign a $5,000 refund. Agents tend to get everything or nothing. In July 2025 a coding agent deleted a company's production database during a declared code freeze.<sup><a href="#s3">3</a></sup> In a 2026 Cloud Security Alliance survey of 445 IT and security professionals, 53% said their agents had gone beyond their intended permissions.<sup><a href="#s4">4</a></sup></p></div></div>
+      <div class="gap"><div><h3>Approving everything does not scale</h3><p>The usual fix is to put a person in front of every action. With enough agents, that person stops reading and starts clicking. Practitioners already describe reviewers rubber-stamping AI output just to clear the queue.<sup><a href="#s5">5</a></sup></p></div></div>
+      <div class="gap"><div><h3>Nobody knows what a rule change will do</h3><p>Raise a spending limit and you find out what it did afterwards, in production. There is no way to ask first: how many interruptions does this save me, and how much money starts moving without me?</p></div></div>
+    </div>
+    <p>These are operations problems, not security ones. The question is not "is this AI allowed in the building?" It is "the agents we chose are working right now. What needs me?"</p>
 
-    <h2>The bet: make the state of the crew a place</h2>
-    <p>People are good at reading a room. A factory floor, a kitchen or an airport tower can be understood at a glance because position carries meaning. I wanted to see if the same could work for agents.</p>
-    <p>So in Outpost every state is a location. A bot towing a parcel is working. A bot at the Gate needs a yes. A bot inside a red bubble at the Vault was stopped. A bot asleep on its pad has nothing to do.</p>
+    <h2>What Outpost gives that person</h2>
+    <div class="scroll"><table class="t">
+      <tr><th>The manager's question</th><th>What Outpost does</th><th>Where</th></tr>
+      <tr><td>Who needs me right now?</td><td>Makes status a place. A bot at the Gate is waiting on you. A bot in a red bubble was stopped.</td><td>The base, Roll call</td></tr>
+      <tr><td>What may each agent do alone?</td><td>An authority table: a spending limit for each trust level, and trust is earned by clean runs.</td><td>Autonomy lab</td></tr>
+      <tr><td>What must always come to me?</td><td>Four sign-off rules. Two of them can never be switched off.</td><td>The Gate</td></tr>
+      <tr><td>What if an agent steps outside its job?</td><td>Each bot carries a badge of tools. Anything else is stopped before it runs.</td><td>The Vault</td></tr>
+      <tr><td>What happened, and who decided?</td><td>Every decision is recorded with the rule that fired. The record checks itself and exports.</td><td>Logbook</td></tr>
+      <tr><td>What will this change do?</td><td>Replays 20 shifts as the base runs now and as your draft would run it.</td><td>Autonomy lab</td></tr>
+    </table></div>
   </div>
 
   <div class="pair">
-    <figure><img src="docs/gate.webp" alt="A bot at the Gate with the barrier lifting after approval" width="1440" height="900"><figcaption>The Gate. Risky work stops here until a person decides.</figcaption></figure>
-    <figure><img src="docs/vault.webp" alt="A bot held inside a red bubble outside the Vault, with a card offering three choices" width="1440" height="900"><figcaption>The Vault. Kite reached for records that are not on its badge.</figcaption></figure>
+    <figure><img src="docs/gate.webp" alt="A bot at the Gate with the barrier lifting after approval" width="1440" height="900"><figcaption>The Gate. Work that needs a signature stops here until a person decides.</figcaption></figure>
+    <figure><img src="docs/vault.webp" alt="A bot held inside a red bubble outside the Vault, with a card offering three choices" width="1440" height="900"><figcaption>The Vault. Kite reached for a tool that is not on its badge.</figcaption></figure>
   </div>
 
   <div class="col">
-    <h2>Three decisions that shaped it</h2>
+    <h2>How it works</h2>
+    <p>Everything a bot wants to do passes through one function. It looks at three things: what kind of action this is, how much money it moves, and who is asking. It never reads what is inside the work, and no model is involved, so the same question always gets the same answer.</p>
+  </div>
+  <div class="dia"><svg viewBox="0 0 1000 452" role="img" aria-label="How Outpost works: every action a bot wants to take goes to one decision point, which allows it, holds it for a person at the Gate or stops it at the Vault. A person decides what was held or stopped. Every decision is written to the logbook. The authority table feeds the decision point and can be tested in the Autonomy lab. The state is plain data, drawn as the base, the roll call and the rewind.">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#8792AA"/></marker></defs>
+<g font-family="Geist, system-ui, sans-serif" font-size="14" fill="#EEF2FA">
+<g fill="none" stroke="#8792AA" stroke-width="1.2" marker-end="url(#ah)">
+<path d="M176 118H262"/><path d="M482 81H566"/><path d="M482 118H566"/><path d="M482 155H566"/><path d="M372 224V168"/><path d="M176 262H262"/>
+<path d="M756 81H822"/><path d="M756 155H822"/><path d="M661 170V224"/><path d="M661 300V352"/>
+<path d="M756 118C806 118 806 262 758 262"/>
+<path d="M440 168C470 210 520 320 598 352" stroke-dasharray="3 4"/>
+</g>
+<g fill="#0F121C" stroke="rgba(214,224,246,.22)"><rect x="24" y="84" width="152" height="68" rx="10"/><rect x="24" y="228" width="152" height="68" rx="10"/><rect x="262" y="224" width="220" height="76" rx="10"/><rect x="566" y="224" width="190" height="76" rx="10"/><rect x="566" y="352" width="410" height="76" rx="10"/><rect x="24" y="352" width="458" height="76" rx="10"/><rect x="822" y="66" width="154" height="30" rx="9"/><rect x="822" y="140" width="154" height="30" rx="9"/><rect x="566" y="66" width="190" height="30" rx="9"/></g>
+<rect x="262" y="68" width="220" height="100" rx="10" fill="rgba(111,134,255,.10)" stroke="#6F86FF"/>
+<rect x="566" y="103" width="190" height="30" rx="9" fill="#0F121C" stroke="rgba(255,181,71,.75)"/>
+<rect x="566" y="140" width="190" height="30" rx="9" fill="#0F121C" stroke="rgba(255,77,94,.7)"/>
+<text x="100" y="113" text-anchor="middle" font-weight="500">A bot wants to act</text><text x="100" y="133" text-anchor="middle" font-size="12" fill="#A9B1C4">tool, amount, risk</text>
+<text x="372" y="100" text-anchor="middle" font-weight="500">The decision point</text><text x="372" y="123" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#AEBBFF">decide(action, bot, authority)</text><text x="372" y="147" text-anchor="middle" font-size="12" fill="#A9B1C4">plain code, same answer every time</text>
+<text x="661" y="86" text-anchor="middle">Allow: it runs alone</text><text x="661" y="123" text-anchor="middle" fill="#FFB547">Hold: the Gate</text><text x="661" y="160" text-anchor="middle" fill="#FF7A86">Stop: the Vault</text>
+<text x="899" y="86" text-anchor="middle" font-size="13" fill="#A9B1C4">the work ships</text><text x="899" y="160" text-anchor="middle" font-size="13" fill="#A9B1C4">the tool never runs</text>
+<text x="100" y="257" text-anchor="middle" font-weight="500">Autonomy lab</text><text x="100" y="277" text-anchor="middle" font-size="12" fill="#A9B1C4">replays 20 shifts</text>
+<text x="372" y="254" text-anchor="middle" font-weight="500">Authority table</text><text x="372" y="275" text-anchor="middle" font-size="12" fill="#A9B1C4">trust levels, limits, sign-off rules</text><text x="372" y="291" text-anchor="middle" font-size="12" fill="#A9B1C4">plain data</text>
+<text x="661" y="254" text-anchor="middle" font-weight="500">A person decides</text><text x="661" y="275" text-anchor="middle" font-size="12" fill="#A9B1C4">approve, send back,</text><text x="661" y="291" text-anchor="middle" font-size="12" fill="#A9B1C4">keep out, allow once</text>
+<text x="771" y="382" text-anchor="middle" font-weight="500">Logbook</text><text x="771" y="403" text-anchor="middle" font-size="12" fill="#A9B1C4">every decision, append-only, self-checking, exports as JSON</text>
+<text x="253" y="382" text-anchor="middle" font-weight="500">State: one plain object</text><text x="253" y="403" text-anchor="middle" font-size="12" fill="#A9B1C4">drawn three ways: the 3D base, the roll call, the rewind</text>
+</g></svg></div>
+  <div class="col">
+<pre class="code"><span class="k">decide</span>(
+  { tool: <span class="s">'payments.refund'</span>, risk: [<span class="s">'money'</span>], amount: 825 },   <span class="c">// the action</span>
+  { name: <span class="s">'Juno'</span>, clean: 4,                                    <span class="c">// who is asking</span>
+    tools: [<span class="s">'payments.refund'</span>, <span class="s">'payments.pay'</span>, <span class="s">'crm.read'</span>] },
+  authority                                  <span class="c">// what the crew may do alone</span>
+)
+<span class="c">// { outcome: 'hold', rule: 'money',</span>
+<span class="c">//   reason: "$825 is over Juno's $200 limit",</span>
+<span class="c">//   level: 'trusted', limit: 200, authority: 'a-d8e797' }</span></pre>
+    <p>The authority table is plain data, not code. Companies already keep one for people, usually called a delegation of authority: who may sign off what, and up to how much. This is the same instrument for agents.</p>
+<pre class="code">{ levels: [
+    { id: <span class="s">'supervised'</span>, min: 0, limit: 0 },     <span class="c">// asks before moving money</span>
+    { id: <span class="s">'trusted'</span>,    min: 3, limit: 200 },   <span class="c">// after 3 clean runs</span>
+    { id: <span class="s">'autonomous'</span>, min: 8, limit: 500 },   <span class="c">// after 8 clean runs</span>
+  ],
+  rules: { money: <span class="k">true</span>, customer: <span class="k">true</span> } }      <span class="c">// the other two are locked on</span></pre>
+    <ol class="rules">
+      <li>Anything sent outside the company always waits for a person. Locked.</li>
+      <li>Anything that cannot be undone always waits for a person. Locked.</li>
+      <li>Money over the bot's limit waits for a person.</li>
+      <li>A message to a customer waits only while the bot is Supervised.</li>
+    </ol>
+    <p>This is also where a real agent would plug in. The call sits in front of the tool, in the agent's own runtime:</p>
+<pre class="code"><span class="k">const</span> d = <span class="k">decide</span>(action, bot, authority);
+<span class="k">if</span> (d.outcome === <span class="s">'stop'</span>) <span class="k">throw new</span> Blocked(d.reason);   <span class="c">// the tool never runs</span>
+<span class="k">if</span> (d.outcome === <span class="s">'hold'</span>) <span class="k">await</span> signOff(d);              <span class="c">// a person decides</span>
+<span class="k">await</span> tool.run(action);</pre>
+    <p class="note">In this build the caller is a simulation, because the bots are simulated. The function cannot tell the difference, and the simulation, the tests and the lab all go through it.</p>
+    <p>The state of the base is one plain object. The 3D scene, the roll call and the rewind are three drawings of that same object, so they cannot disagree. A copy is kept every half second, which is what makes rewind possible.</p>
+
+    <h2>The Autonomy lab: test a change before it touches the crew</h2>
+    <p>This is the part I would lead with in front of an operations team. Move a limit, change how fast trust is earned, or switch a rule. Then replay 20 shifts twice, once as the base runs now and once as your draft would run it, with the same starting work for both. You get the trade in numbers before anything is applied.</p>
+  </div>
+
+  <figure><img src="docs/lab.webp" alt="The Autonomy lab: sliders for the money limit at each trust level on the left, and a table comparing the current setup with a draft on the right" width="1440" height="900"><figcaption>Raising the limits from $200 and $500 to $400 and $1,000. Fewer interruptions, more money moving without a person, and almost no change in output.</figcaption></figure>
+
+  <div class="col">
+    <p>I ran three experiments with it. Each row is 20 simulated ten-minute shifts.</p>
+    <h3>1. How fast does the person have to answer?</h3>
+    <div class="scroll"><table class="t">
+      <tr><th>A person answers</th><th class="n">Shipped per shift</th><th class="n">Crew minutes lost waiting</th></tr>
+      <tr><td>At once</td><td class="n">83.2</td><td class="n">0.0</td></tr>
+      <tr><td>Within 15 seconds</td><td class="n">75.0</td><td class="n">3.9</td></tr>
+      <tr><td>Within a minute</td><td class="n">60.8</td><td class="n">11.4</td></tr>
+      <tr><td>Within three minutes</td><td class="n">47.8</td><td class="n">18.4</td></tr>
+      <tr><td>Nobody answers</td><td class="n">28.2</td><td class="n">27.0</td></tr>
+    </table></div>
+    <h3>2. What does loosening the money limits buy?</h3>
+    <div class="scroll"><table class="t">
+      <tr><th>Limits<small>Supervised, Trusted, Autonomous</small></th><th class="n">Shipped</th><th class="n">Asks per shift</th><th class="n">Moved without a person</th></tr>
+      <tr><td>Tight: $0, $100, $250</td><td class="n">74.5</td><td class="n">12.2</td><td class="n">$139</td></tr>
+      <tr class="hl"><td>Default: $0, $200, $500</td><td class="n">75.0</td><td class="n">10.6</td><td class="n">$673</td></tr>
+      <tr><td>Loose: $0, $400, $1,000</td><td class="n">75.8</td><td class="n">7.8</td><td class="n">$2,157</td></tr>
+      <tr><td>No money rule at all</td><td class="n">76.6</td><td class="n">5.8</td><td class="n">$4,778</td></tr>
+    </table></div>
+    <h3>3. How quickly should trust be earned?</h3>
+    <div class="scroll"><table class="t">
+      <tr><th>Clean runs to reach Trusted and Autonomous</th><th class="n">Shipped</th><th class="n">Asks per shift</th><th class="n">Moved without a person</th></tr>
+      <tr><td>Slow: 6 and 16</td><td class="n">71.3</td><td class="n">14.4</td><td class="n">$138</td></tr>
+      <tr class="hl"><td>Default: 3 and 8</td><td class="n">75.0</td><td class="n">10.6</td><td class="n">$673</td></tr>
+      <tr><td>Fast: 1 and 3</td><td class="n">76.7</td><td class="n">8.3</td><td class="n">$1,451</td></tr>
+    </table></div>
+    <p class="note">Experiments 2 and 3 assume a person who answers within 15 seconds. All of it is a seeded simulation with made-up work. It shows how the rules behave, not how a real company would perform. Run <code>npm run eval</code> to reproduce every number.</p>
+    <div class="callout"><small>What the lab showed</small><p>The lever is how fast the person answers, not how loose the rules are.</p></div>
+    <p>Doubling the limits removed 26% of the interruptions, but it more than tripled the money moving without a person, and output rose by 1%. Answering in 15 seconds instead of a minute raised output by 23% with no change to the rules at all. A team that only had the first experiment would loosen its limits to go faster. The lab shows that would buy almost nothing and cost real exposure.</p>
+    <p>That finding shaped the interface. If response time is the lever, the product's first job is to make "who needs me?" impossible to miss. It is why amber is kept for one meaning in Outpost, work that needs a person, and why the rest of the base is drawn in white and grey.</p>
+
+    <h2>The logbook: what happened, and who decided</h2>
+    <p>Every time the rules allow, hold or stop something, a line is written. Every time a person approves, sends back, keeps a bot out, pauses a bot or changes a limit, another line is written after it. Each line names the rule, the inputs, how long the bot waited, and the exact authority table that was in force. The logbook is append-only and kept outside the live state, so rewinding the base never removes a line. The demo keeps the most recent 5,000.</p>
+  </div>
+
+  <figure><img src="docs/logbook.webp" alt="The logbook: a table of decisions with time, bot, action, decision, reason and who decided, above a line saying the self-check passed" width="1440" height="900"><figcaption>The logbook after a busy stretch: 28 decisions by the rules, 5 held for a person, 4 stopped at the Vault.</figcaption></figure>
+
+  <div class="col">
+<pre class="code">{ <span class="s">"n"</span>: 1, <span class="s">"t"</span>: 0.1, <span class="s">"authority"</span>: <span class="s">"a-d8e797"</span>, <span class="s">"agent"</span>: <span class="s">"juno"</span>,
+  <span class="s">"task"</span>: <span class="s">"T-001"</span>, <span class="s">"title"</span>: <span class="s">"Refund $825 to a policyholder"</span>,
+  <span class="s">"tool"</span>: <span class="s">"payments.refund"</span>, <span class="s">"risk"</span>: [<span class="s">"money"</span>], <span class="s">"amount"</span>: 825,
+  <span class="s">"level"</span>: <span class="s">"trusted"</span>, <span class="s">"limit"</span>: 200,
+  <span class="s">"outcome"</span>: <span class="s">"hold"</span>, <span class="s">"rule"</span>: <span class="s">"money"</span>,
+  <span class="s">"reason"</span>: <span class="s">"$825 is over Juno's $200 limit"</span>,
+  <span class="s">"by"</span>: <span class="s">"rules"</span>, <span class="s">"waited"</span>: <span class="k">null</span> }</pre>
+    <p>The logbook also checks itself. A small function reads only the records and tests them against three promises. It runs live in the panel, and it would run just as well on an exported file.</p>
+    <ol class="rules">
+      <li>Nothing sent outside the company, and nothing that cannot be undone, was ever allowed by the rules alone.</li>
+      <li>No money moved alone above the limit that applied to that bot at that moment.</li>
+      <li>Every decision a person made answers something the rules held or stopped first.</li>
+    </ol>
+
+    <h2>How I know it holds</h2>
+    <p>A product that makes promises about money and sign-off has to be able to show they hold. The engine has 49 tests. The ones that matter most are sweeps, where the inputs are random and the promises are checked every time.</p>
+    <div class="scroll"><table class="t">
+      <tr><th>Sweep</th><th>What is checked</th><th class="n">Failures</th></tr>
+      <tr><td>20,000 random actions, each under a random authority table</td><td>A locked rule or a badge is never bypassed, and money never moves alone above the limit.</td><td class="n">0</td></tr>
+      <tr><td>5,000 pairs of limits</td><td>Raising a limit never turns an allowed action into a held one.</td><td class="n">0</td></tr>
+      <tr><td>60 shifts with random tables and an erratic person</td><td>5,972 logbook decisions pass the three promises, and nothing held ever ships without a yes.</td><td class="n">0</td></tr>
+    </table></div>
+    <p>Two more properties are tested directly. The same seed always produces the same history, which is what makes a replay a fair comparison. And any input, however broken, becomes a valid authority table where each level is at least as trusted as the one below.</p>
+
+    <h2>Three design decisions</h2>
     <div class="cards">
-      <div class="card"><h3>Stay quiet until a person is needed</h3><p>In the simulation only about one task in six needs a person. So amber is reserved for one meaning, waiting on you, and nothing else on the screen is allowed to use it.</p></div>
-      <div class="card"><h3>Trust is earned, and you can see it</h3><p>Every bot starts Supervised. Clean runs promote it to Trusted, then Autonomous, and each level raises what it may do alone. The level shows as pips circling the bot, and one click resets it.</p></div>
+      <div class="card"><h3>Stay quiet until a person is needed</h3><p>With a person answering at once, about one task in six stops at the Gate. The rest never needs anyone. So the base is drawn in white and grey, and colour is kept for meaning: amber is work that needs a person, red is stopped.</p></div>
+      <div class="card"><h3>Trust is earned, and you can see it</h3><p>A new bot starts Supervised. Clean runs promote it, and each level raises what it may do alone. The level shows as pips circling the bot, and one click takes it back to zero.</p></div>
       <div class="card"><h3>The list is always one click away</h3><p>A 3D view is good for noticing and poor for searching. Roll call shows the same crew as a plain table with the same buttons, so nobody is forced to use the scene for a job a list does better.</p></div>
     </div>
   </div>
 
   <div class="pair">
     <figure><img src="docs/bot.webp" alt="A bot selected, with a panel showing its owner, task, route, trust and badge" width="1440" height="900"><figcaption>One bot up close: owner, task, route, trust and what it may touch.</figcaption></figure>
-    <figure><img src="docs/rollcall.webp" alt="The crew shown as a table with approve and pause buttons" width="1440" height="900"><figcaption>Roll call: the same state, as a list.</figcaption></figure>
+    <figure><img src="docs/rewind.webp" alt="The base rewound by about a minute, with a card saying you are looking at the past" width="1440" height="900"><figcaption>Rewind. Up to the last two and a half minutes can be replayed from saved state.</figcaption></figure>
   </div>
 
   <div class="col">
-    <h2>The rules</h2>
-    <p>When a person has to say yes is decided by four fixed rules, checked in order. They are plain, tested code. No model decides any of it.</p>
-    <ol class="rules">
-      <li>Data leaving the company always needs a person.</li>
-      <li>Anything that cannot be undone always needs a person.</li>
-      <li>Money over the bot's limit needs a person. The limit is $0, $200 or $500 by trust level.</li>
-      <li>A message to a customer needs a person only while the bot is Supervised.</li>
-    </ol>
-    <p>Separately, a bot can only use the tools on its badge. If it reaches for anything else it is stopped before it gets there, and the person chooses: keep it out, allow it once for this task only, or pause it.</p>
-
-    <h2>What the simulation showed</h2>
-    <p>I ran twenty simulated ten-minute shifts twice: once with a person answering at once, and once with nobody answering.</p>
-    <div class="nums">
-      <div class="num"><b>16%</b><span>of shipped work needed a person</span></div>
-      <div class="num"><b>83</b><span>tasks shipped per shift with someone answering</span></div>
-      <div class="num"><b>28</b><span>shipped per shift with nobody answering</span></div>
-    </div>
-    <p>Most work never needs a person, which is the case for a quiet interface. But when nobody answers, output drops by two thirds, because a bot waiting at the Gate is a bot that is not working. The person is the bottleneck, so the product's first job is to make "who needs me?" impossible to miss.</p>
-    <p class="note">These numbers come from a seeded simulation with made-up tasks. They show how the rules behave, not how a real company would perform.</p>
+    <h2>Outpost is not Umbra</h2>
+    <p>I built two products about AI inside a company, on purpose, because they are two different jobs done by two different people. They share one fictional company, Kestrel Mutual, and nothing else.</p>
   </div>
-
-  <figure><img src="docs/rewind.webp" alt="The base rewound by about a minute, with a card saying you are looking at the past" width="1440" height="900"><figcaption>Rewind. Every moment is kept as plain data, so the last few minutes can be replayed.</figcaption></figure>
+  <div class="vs">
+    <div class="u"><h3>Umbra</h3><p class="w">Governance</p><dl>
+      <div><dt>Question</dt><dd>What AI is being used here that we never approved, and what is it being told?</dd></div>
+      <div><dt>Who uses it</dt><dd>The security or risk lead who answers for the company's data.</dd></div>
+      <div><dt>Looks at</dt><dd>Every AI tool across the company, and the content flowing into it.</dd></div>
+      <div><dt>Timescale</dt><dd>Weeks and quarters: posture, rules, where to invest next.</dd></div>
+      <div><dt>Uses AI to</dt><dd>Draft rules and summarise incidents. People approve them.</dd></div>
+      <div><dt>Success is</dt><dd>Sensitive data stops leaking, and unapproved use becomes a plan.</dd></div></dl></div>
+    <div class="o"><h3>Outpost</h3><p class="w">Operations</p><dl>
+      <div><dt>Question</dt><dd>The agents we chose are working right now. Which one needs me?</dd></div>
+      <div><dt>Who uses it</dt><dd>The operations lead who answers for the crew's output.</dd></div>
+      <div><dt>Looks at</dt><dd>One crew, one action at a time. It never reads what is inside the work.</dd></div>
+      <div><dt>Timescale</dt><dd>Seconds and minutes: a bot is waiting, and waiting costs output.</dd></div>
+      <div><dt>Uses AI to</dt><dd>Nothing. There is no model anywhere in the decision.</dd></div>
+      <div><dt>Success is</dt><dd>More work shipped per person, with every signature accounted for.</dd></div></dl></div>
+  </div>
+  <div class="join col"><b>Where they meet.</b> Umbra's last step with an agent is to approve it, name its owner and list what it may touch. That is exactly what Outpost needs to put a bot on the crew: an owner and a badge. Umbra decides which agents get in. Outpost is where they go to work.</div>
 
   <div class="col">
     <h2>What is real and what is not</h2>
     <ul>
-      <li><strong>Real:</strong> the approval rules, trust levels, badge checks, routing, pausing and rewind. All of it is plain JavaScript with 30 tests.</li>
-      <li><strong>Simulated:</strong> the bots do not call a real model or do real work. Tasks, costs and failures are generated from a seed.</li>
+      <li><strong>Real:</strong> the decision function, the authority table, trust levels, badge checks, the logbook and its self-check, the lab, pausing and rewind. All of it is plain JavaScript with 49 tests.</li>
+      <li><strong>Simulated:</strong> the bots do not call a real model or do real work. Tasks, amounts, costs and failures are generated from a seed, and the person in the lab is a stand-in who answers after a fixed delay.</li>
       <li><strong>Stand-in:</strong> the command bar matches typed words with simple rules. A language model would fill that slot in a real product.</li>
       <li><strong>Fictional:</strong> Kestrel Mutual and everyone in it.</li>
     </ul>
 
     <h2>What I would do next</h2>
     <ul>
-      <li><strong>Test the bet.</strong> Time real supervisors spotting a stuck bot in the scene against the same task in the list. If the scene is not faster, it should not be the default view.</li>
-      <li><strong>Plug in real agents.</strong> The engine already separates state from drawing, so a live feed of agent events could replace the simulation without touching the base.</li>
-      <li><strong>Scale.</strong> Eight bots read well. Eighty will not. Teams would need to collapse into squads you can open.</li>
+      <li><strong>Connect one real agent.</strong> Put the decision call in front of a real agent's tools and feed its events into the same state. The base, the logbook and the lab would not need to change.</li>
+      <li><strong>Replay real shifts.</strong> The lab replays simulated work. With a real logbook it could replay last week instead, which is the version an operations team would trust.</li>
+      <li><strong>Test the bet.</strong> Time real supervisors spotting a waiting bot in the scene against the same task in the list. If the scene is not faster, it should not be the default view.</li>
+      <li><strong>Scale.</strong> Eight bots read well. Eighty will not. Teams would need to collapse into squads you can open, each with its own authority table.</li>
     </ul>
+
+    <h2>Sources</h2>
+    <ol class="src">
+      <li id="s1">Microsoft, <a href="https://blogs.microsoft.com/blog/2025/04/23/the-2025-annual-work-trend-index-the-frontier-firm-is-born/">2025 Work Trend Index: The Frontier Firm is born</a>, April 2025.</li>
+      <li id="s2">Gartner, <a href="https://www.gartner.com/en/newsroom/press-releases/2025-06-25-gartner-predicts-over-40-percent-of-agentic-ai-projects-will-be-canceled-by-end-of-2027">Over 40% of agentic AI projects will be canceled by end of 2027</a>, June 2025.</li>
+      <li id="s3">The Register, <a href="https://www.theregister.com/2025/07/21/replit_saastr_vibe_coding_incident/">Vibe coding service Replit deleted user's production database</a>, July 2025.</li>
+      <li id="s4">Cloud Security Alliance, <a href="https://cloudsecurityalliance.org/press-releases/2026/04/16/more-than-half-of-organizations-experience-ai-agent-scope-violations-cloud-security-alliance-study-finds">More than half of organizations experience AI agent scope violations</a>, April 2026. The study was commissioned by Zenity.</li>
+      <li id="s5">TechTarget, <a href="https://www.techtarget.com/it-strategy/news/366649960/The-human-in-the-loop-is-falling-asleep">The human in the loop is falling asleep</a>.</li>
+    </ol>
   </div>
 
   <footer><span>Designed and built by Murtuza.</span><span>Fictional company, simulated bots.</span></footer>
