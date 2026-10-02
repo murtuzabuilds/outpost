@@ -1,0 +1,11 @@
+/* Outpost brand tokens. Dusk indigo ground, cream text, coral for the brand, one colour per station. */
+:root{
+  --night:#0B0C26; --indigo:#1B1B52; --deck:#5257B8; --cream:#FFF4D6;
+  --coral:#FF7A59;   /* brand, primary actions */
+  --amber:#FFC857;   /* needs a person */
+  --mint:#6FE8C0;    /* passed, approved */
+  --red:#FF5470;     /* stopped, off limits */
+  --sky:#6FC3FF; --lilac:#B79CFF; --pink:#FF7EB6;
+  --ui:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}

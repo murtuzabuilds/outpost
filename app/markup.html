@@ -1,0 +1,62 @@
+<div class="app" id="app" data-zoom="mid">
+  <canvas id="gl" role="img" aria-label="A floating base seen from above. Eight small robots carry parcels between stations: Inbox, Briefing, Library, Workshop, Checkpoint, the Gate, Launchpad, a Charging Dock and a Vault."></canvas>
+  <div class="tags" id="tags" aria-hidden="true"></div>
+
+  <header class="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 16v-6" stroke="#FFF4D6" stroke-width="3.2" stroke-linecap="round"/><circle cx="32" cy="7.5" r="4.2" fill="#FFC857"/><path d="M52 37 42.5 53.5h-21L12 37l9.5-16.5h21Z" fill="#FF7A59" stroke="#FF7A59" stroke-width="7" stroke-linejoin="round"/><rect x="22.5" y="29.5" width="6" height="13" rx="3" fill="#FFF4D6"/><rect x="35.5" y="29.5" width="6" height="13" rx="3" fill="#FFF4D6"/></svg>
+      <div class="brand-t"><b>Outpost</b><span>Kestrel Mutual crew <i>demo</i></span></div>
+    </div>
+    <div class="stats" id="stats" aria-live="polite"></div>
+  </header>
+
+  <aside class="crew" id="crew" aria-label="Crew"></aside>
+
+  <aside class="inspect" id="inspect" aria-live="polite" hidden></aside>
+
+  <div class="alerts" id="alerts" aria-live="assertive"></div>
+
+  <div class="radio" id="radio" aria-label="Activity"></div>
+
+  <div class="coach" id="coach">
+    <b>Try it</b>
+    <span data-c="bot"><i></i>Click a bot</span>
+    <span data-c="send"><i></i>Send a task</span>
+    <span data-c="gate"><i></i>Decide at the Gate</span>
+    <button type="button" id="coachX" aria-label="Hide tips">&times;</button>
+  </div>
+
+  <footer class="bar">
+    <div class="time">
+      <button type="button" class="live" id="liveBtn" aria-label="Back to live"><i></i><span id="liveTxt">LIVE</span></button>
+      <div class="track"><div class="marks" id="marks"></div><input type="range" id="scrub" min="0" max="100" value="100" step="1" aria-label="Rewind the last few minutes"></div>
+      <span class="clock" id="clock">09:00:50</span>
+    </div>
+    <div class="row">
+      <div class="send">
+        <button type="button" class="btn pri" id="sendBtn">Send a task</button>
+        <button type="button" class="btn warn" id="riskBtn">Send a risky one</button>
+      </div>
+      <form class="ask" id="askForm" autocomplete="off">
+        <input id="askIn" type="text" placeholder="Ask the base: who needs me?" aria-label="Ask the base" enterkeyhint="go">
+        <button type="submit" class="btn sm" aria-label="Ask">Ask</button>
+      </form>
+      <div class="views">
+        <button type="button" class="btn ghost" id="listBtn" aria-pressed="false">Roll call</button>
+        <button type="button" class="btn ghost ic" id="rotL" aria-label="Turn the base left">&#8630;</button>
+        <button type="button" class="btn ghost ic" id="rotR" aria-label="Turn the base right">&#8631;</button>
+        <button type="button" class="btn ghost ic" id="homeBtn" aria-label="Reset the view">&#9678;</button>
+        <button type="button" class="btn ghost" id="soundBtn" aria-pressed="false">Sound off</button>
+      </div>
+    </div>
+    <div class="answer" id="answer" hidden></div>
+  </footer>
+
+  <section class="list" id="list" hidden aria-label="Roll call"></section>
+
+  <div class="fail" id="fail" hidden>
+    <b>Outpost needs 3D graphics to run.</b>
+    <span>This browser has them turned off or could not load the 3D library. Try another browser or reload the page.</span>
+  </div>
+  <div class="credit">Designed and built by Murtuza. Fictional company, simulated bots.</div>
+</div>
