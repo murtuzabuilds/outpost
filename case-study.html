@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="description" content="Outpost case study: how one person can supervise a crew of AI agents, designed as a place you can look at and run.">
+<meta name="theme-color" content="#0B0C26">
+<link rel="icon" href="brand/favicon.svg">
+<title>Outpost case study</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400..700&display=swap">
+<style>
+/* Layout: one reading column on a dusk ground, with wide screenshots breaking out of it. */
+:root{color-scheme:dark;--night:#0B0C26;--panel:#14143F;--line:rgba(255,244,214,.16);--cream:#FFF4D6;--ink-2:#C4C2E6;--ink-3:#8E8CC0;--coral:#FF7A59;--amber:#FFC857;--mint:#6FE8C0;--red:#FF5470;--on-cream:#1A1642;
+  --ui:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--night);background-image:radial-gradient(90% 50% at 50% 0%,#2B2168 0%,transparent 70%);background-repeat:no-repeat;color:var(--cream);font-family:var(--ui);font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:28px 80px}
+.col{max-width:680px;margin-inline:auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:24px;letter-spacing:-.03em;color:inherit;text-decoration:none}
+.brand img{width:40px;height:40px}
+.brand span{font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-left:4px}
+nav{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-block;border-radius:13px;padding:9px 16px 10px;font-weight:700;font-size:15px;text-decoration:none;background:var(--coral);color:#2A0E06;box-shadow:0 3px 0 #B8472B}
+.btn.ghost{background:rgba(255,244,214,.1);color:var(--cream);box-shadow:inset 0 0 0 1.5px var(--line)}
+:focus-visible{outline:2.5px solid var(--amber);outline-offset:2px}
+small.k{display:block;font:600 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:12px}
+h1{font-size:clamp(38px,6.4vw,68px);line-height:1;letter-spacing:-.035em;font-weight:800;margin:0 0 22px;text-wrap:balance}
+h2{font-size:clamp(26px,3.6vw,36px);line-height:1.1;letter-spacing:-.025em;font-weight:800;margin:72px 0 14px;text-wrap:balance}
+h3{font-size:20px;margin:0 0 4px;font-weight:700}
+p{margin:0 0 16px;color:var(--ink-2)}
+p.lede{font-size:22px;line-height:1.4;color:var(--cream)}
+a{color:var(--amber)}
+strong{color:var(--cream)}
+figure{margin:40px 0}
+figure img{display:block;width:100%;height:auto;border-radius:20px;border:1.5px solid var(--line)}
+figcaption{font-size:14px;color:var(--ink-3);margin-top:10px;text-align:center}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:40px 0}
+.pair figure{margin:0}
+.cards{display:grid;gap:12px;margin:22px 0}
+.card{background:var(--panel);border:1.5px solid var(--line);border-radius:18px;padding:18px 20px}
+.card p{margin:0;font-size:16.5px}
+ol.rules{list-style:none;margin:20px 0;padding:0;display:grid;gap:8px;counter-reset:r}
+ol.rules li{counter-increment:r;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline;background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:12px 16px;color:var(--ink-2);font-size:16.5px}
+ol.rules li::before{content:counter(r);font:700 13px var(--mono);background:var(--amber);color:var(--on-cream);border-radius:8px;padding:1px 8px}
+.nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:24px 0}
+.num{background:var(--panel);border:1.5px solid var(--line);border-radius:18px;padding:16px 18px}
+.num b{display:block;font-size:44px;line-height:1;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.num span{display:block;font-size:14.5px;color:var(--ink-2);margin-top:6px}
+.note{font-size:14.5px;color:var(--ink-3)}
+ul{margin:0 0 16px;padding-left:20px;color:var(--ink-2)}
+li{margin-bottom:6px}
+footer{margin-top:80px;padding-top:22px;border-top:1.5px solid var(--line);font-size:14px;color:var(--ink-3);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="./"><img src="brand/outpost-mark.svg" alt="">Outpost<span>Case study</span></a>
+    <nav><a class="btn" href="./">Open the live demo</a><a class="btn ghost" href="https://github.com/murtuzabuilds/outpost">Code</a></nav>
+  </header>
+
+  <div class="col">
+    <small class="k">Agent management, concept build, 2026</small>
+    <h1>How does one person supervise a crew of agents?</h1>
+    <p class="lede">Outpost turns a team of AI agents into a place you can look at. Each bot is something you can click, where it stands tells you what it is doing, and the risky calls stop and wait for you.</p>
+    <p>I designed and built it end to end: the product idea, the rules, the simulation, the 3D base, the interface and the brand.</p>
+  </div>
+
+  <figure><img src="docs/overview.webp" alt="The Outpost base seen from above: eight bots moving between stations, with one waiting at the Gate" width="1440" height="900"><figcaption>The base at Kestrel Mutual, a fictional insurer. Juno is waiting at the Gate with a refund over its limit.</figcaption></figure>
+
+  <div class="col">
+    <h2>The problem</h2>
+    <p>Companies are starting to run agents that do real work: sort claims, answer customers, move money. Managing them has become a product category of its own. Microsoft, for one, describes Agent 365 as <a href="https://www.microsoft.com/en-us/microsoft-365/blog/2025/11/18/microsoft-agent-365-the-control-plane-for-ai-agents/">the control plane for AI agents</a>.</p>
+    <p>Most of these tools show agents the way software has always shown things: tables, logs and charts. That is fine for one agent. It gets hard when one person answers for a dozen, because the three things that matter most are the easiest to miss in a table:</p>
+    <ul>
+      <li><strong>Who is waiting on me?</strong></li>
+      <li><strong>Who is stuck?</strong></li>
+      <li><strong>Who just reached for something they should not touch?</strong></li>
+    </ul>
+
+    <h2>The bet: make the state of the crew a place</h2>
+    <p>People are good at reading a room. A factory floor, a kitchen or an airport tower can be understood at a glance because position carries meaning. I wanted to see if the same could work for agents.</p>
+    <p>So in Outpost every state is a location. A bot towing a parcel is working. A bot at the Gate needs a yes. A bot inside a red bubble at the Vault was stopped. A bot asleep on its pad has nothing to do.</p>
+  </div>
+
+  <div class="pair">
+    <figure><img src="docs/gate.webp" alt="A bot at the Gate with the barrier lifting after approval" width="1440" height="900"><figcaption>The Gate. Risky work stops here until a person decides.</figcaption></figure>
+    <figure><img src="docs/vault.webp" alt="A bot held inside a red bubble outside the Vault, with a card offering three choices" width="1440" height="900"><figcaption>The Vault. Kite reached for records that are not on its badge.</figcaption></figure>
+  </div>
+
+  <div class="col">
+    <h2>Three decisions that shaped it</h2>
+    <div class="cards">
+      <div class="card"><h3>Stay quiet until a person is needed</h3><p>In the simulation only about one task in six needs a person. So amber is reserved for one meaning, waiting on you, and nothing else on the screen is allowed to use it.</p></div>
+      <div class="card"><h3>Trust is earned, and you can see it</h3><p>Every bot starts Supervised. Clean runs promote it to Trusted, then Autonomous, and each level raises what it may do alone. The level shows as pips circling the bot, and one click resets it.</p></div>
+      <div class="card"><h3>The list is always one click away</h3><p>A 3D view is good for noticing and poor for searching. Roll call shows the same crew as a plain table with the same buttons, so nobody is forced to use the scene for a job a list does better.</p></div>
+    </div>
+  </div>
+
+  <div class="pair">
+    <figure><img src="docs/bot.webp" alt="A bot selected, with a panel showing its owner, task, route, trust and badge" width="1440" height="900"><figcaption>One bot up close: owner, task, route, trust and what it may touch.</figcaption></figure>
+    <figure><img src="docs/rollcall.webp" alt="The crew shown as a table with approve and pause buttons" width="1440" height="900"><figcaption>Roll call: the same state, as a list.</figcaption></figure>
+  </div>
+
+  <div class="col">
+    <h2>The rules</h2>
+    <p>When a person has to say yes is decided by four fixed rules, checked in order. They are plain, tested code. No model decides any of it.</p>
+    <ol class="rules">
+      <li>Data leaving the company always needs a person.</li>
+      <li>Anything that cannot be undone always needs a person.</li>
+      <li>Money over the bot's limit needs a person. The limit is $0, $200 or $500 by trust level.</li>
+      <li>A message to a customer needs a person only while the bot is Supervised.</li>
+    </ol>
+    <p>Separately, a bot can only use the tools on its badge. If it reaches for anything else it is stopped before it gets there, and the person chooses: keep it out, allow it once for this task only, or pause it.</p>
+
+    <h2>What the simulation showed</h2>
+    <p>I ran twenty simulated ten-minute shifts twice: once with a person answering at once, and once with nobody answering.</p>
+    <div class="nums">
+      <div class="num"><b>16%</b><span>of shipped work needed a person</span></div>
+      <div class="num"><b>83</b><span>tasks shipped per shift with someone answering</span></div>
+      <div class="num"><b>28</b><span>shipped per shift with nobody answering</span></div>
+    </div>
+    <p>Most work never needs a person, which is the case for a quiet interface. But when nobody answers, output drops by two thirds, because a bot waiting at the Gate is a bot that is not working. The person is the bottleneck, so the product's first job is to make "who needs me?" impossible to miss.</p>
+    <p class="note">These numbers come from a seeded simulation with made-up tasks. They show how the rules behave, not how a real company would perform.</p>
+  </div>
+
+  <figure><img src="docs/rewind.webp" alt="The base rewound by about a minute, with a card saying you are looking at the past" width="1440" height="900"><figcaption>Rewind. Every moment is kept as plain data, so the last few minutes can be replayed.</figcaption></figure>
+
+  <div class="col">
+    <h2>What is real and what is not</h2>
+    <ul>
+      <li><strong>Real:</strong> the approval rules, trust levels, badge checks, routing, pausing and rewind. All of it is plain JavaScript with 27 tests.</li>
+      <li><strong>Simulated:</strong> the bots do not call a real model or do real work. Tasks, costs and failures are generated from a seed.</li>
+      <li><strong>Stand-in:</strong> the command bar matches typed words with simple rules. A language model would fill that slot in a real product.</li>
+      <li><strong>Fictional:</strong> Kestrel Mutual and everyone in it.</li>
+    </ul>
+
+    <h2>What I would do next</h2>
+    <ul>
+      <li><strong>Test the bet.</strong> Time real supervisors spotting a stuck bot in the scene against the same task in the list. If the scene is not faster, it should not be the default view.</li>
+      <li><strong>Plug in real agents.</strong> The engine already separates state from drawing, so a live feed of agent events could replace the simulation without touching the base.</li>
+      <li><strong>Scale.</strong> Eight bots read well. Eighty will not. Teams would need to collapse into squads you can open.</li>
+    </ul>
+  </div>
+
+  <footer><span>Designed and built by Murtuza.</span><span>Fictional company, simulated bots.</span></footer>
+</div>
+</body>
+</html>

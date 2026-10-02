@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "build": "node build.mjs",
-    "start": "npx --yes serve ."
+    "start": "npx --yes serve .",
+    "eval": "node scripts/eval.js"
   },
   "author": "Murtuza",
   "license": "MIT",
