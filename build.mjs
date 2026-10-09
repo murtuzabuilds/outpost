@@ -36,7 +36,7 @@ fs.writeFileSync('index.html', `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow, noarchive">
-<meta name="description" content="Outpost is a base of operations for AI agents: see your crew at work, set what each bot may touch, and decide the risky calls yourself.">
+<meta name="description" content="Outpost is the control room for the person who runs a company's AI agents. Each bot acts alone up to a limit it has earned, and anything risky waits at the Gate for a person's yes. Interactive demo, sample data.">
 <meta name="theme-color" content="#04050B">
 <link rel="icon" href="brand/favicon.svg">
 </head>

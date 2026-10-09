@@ -147,11 +147,13 @@ export function toSpec(a, o = {}) {
   };
 }
 
-// The sample behind the "Dock a sample bot" button, so the feature can be seen without Umbra. It is
-// labelled as a sample wherever it shows, and it is never written to storage.
+// The sample behind the "Dock a bot from Umbra" button, so the feature can be seen without Umbra. It is
+// labelled as a sample wherever it shows, and it is never written to storage. It is built like a real
+// handoff: an owner who exists in Umbra's org data, and tools that the crew's everyday work uses
+// (customer replies and contact updates), so once docked it takes tasks like any other bot.
 export const SAMPLE_AGENT = Object.freeze({
-  id: 'umb-lark', name: 'Lark', job: 'Claims follow-ups', owner: 'Ana Ruiz', team: 'Claims',
-  tools: ['email.send', 'crm.read', 'claims.write'], limit: 150, approvedAt: '2026-10-06T14:20:00Z', source: 'umbra',
-  umbraName: 'Claims follow-up assistant',
-  rules: ['Reads only the claims it is assigned', 'May move up to $150 alone, never more', 'A person signs off its first customer emails'],
+  id: 'umb-sample-lark', name: 'Lark', job: 'Claim status emails', owner: 'Hana Lopez', team: 'Customer Care',
+  tools: ['email.send', 'crm.read', 'crm.write'], limit: 0, approvedAt: '2026-10-06T14:20:00Z', source: 'umbra',
+  umbraName: 'Sample agent',
+  rules: ['Answers customers about their own claim only', 'Moves no money', 'Its customer emails wait for a person\'s yes while it is Supervised'],
 });

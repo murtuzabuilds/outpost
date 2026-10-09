@@ -1,11 +1,13 @@
 <p align="center"><img src="docs/lockup.png" width="420" alt="Outpost"></p>
 <h1 align="center">Outpost</h1>
-<p align="center"><b>The control room for a person who runs a crew of AI agents.</b></p>
-<p align="center"><a href="https://murtuzabuilds.github.io/outpost/"><b>Live demo</b></a> · <a href="https://murtuzabuilds.github.io/outpost/case-study.html"><b>Case study</b></a></p>
+<p align="center"><b>The control room for the person who runs a company's AI agents.</b></p>
+<p align="center"><a href="https://murtuzabuilds.github.io/outpost/"><b>Interactive demo · sample data</b></a> · <a href="https://murtuzabuilds.github.io/outpost/case-study.html"><b>Case study</b></a> · <a href="https://murtuzabuilds.github.io/umbra/"><b>Umbra</b></a> · <a href="https://murtuzabuilds.github.io/"><b>Portfolio</b></a></p>
 
 ![Outpost: a floating base where eight bots carry work between stations](docs/overview.webp)
 
-Outpost is a concept product I designed and built. It shows who on the crew is working and who is waiting, lets each agent act alone up to a limit it has earned, holds the calls that need a signature, keeps a record of every decision, and lets you test a change to those limits on replayed shifts before it goes live.
+Outpost is a concept product I designed and built. It is the control room for the person who runs a company's approved AI agents day to day. Each bot acts alone up to a limit it has earned, and anything risky waits at the Gate for a person's yes. It shows who on the crew is working and who is waiting, keeps a record of every decision, and lets you test a change to those limits on replayed shifts before it is applied.
+
+Both Outpost and [Umbra](https://murtuzabuilds.github.io/umbra/) run at Kestrel Mutual, a fictional insurer. When a person approves an agent in Umbra, it flies into Outpost carrying the owner, permissions and money limit Umbra gave it. All eight bots on the crew are agents Umbra already approved.
 
 ## Why I built it
 
@@ -14,15 +16,15 @@ Agents now do real work: sort claims, answer customers, move money. In Microsoft
 1. **They cannot see who needs them.** In a table of logs a blocked agent looks the same as a busy one, and a blocked agent produces nothing.
 2. **Agents have no limits of authority.** People do. A new hire cannot sign a $5,000 refund. In a 2026 Cloud Security Alliance survey, 53% of organisations said their agents had gone beyond their intended permissions ([CSA](https://cloudsecurityalliance.org/press-releases/2026/04/16/more-than-half-of-organizations-experience-ai-agent-scope-violations-cloud-security-alliance-study-finds), commissioned by Zenity).
 3. **Approving everything does not scale.** With enough agents, the person stops reading and starts clicking.
-4. **Nobody knows what a rule change will do** until it is live.
+4. **Nobody knows what a rule change will do** until it is applied.
 
 ## What it does
 
 | | |
 |---|---|
-| **The base**: status is a place. A bot at the Gate is waiting on you | **The Gate**: work that needs a signature stops until a person decides |
+| **The base**: status is a place. A bot at the Gate is waiting on you | **The Gate** (waits for your yes): risky work waits here for a person's yes |
 | ![](docs/overview.webp) | ![](docs/gate.webp) |
-| **The Vault**: a bot that reaches for a tool outside its job is stopped before it runs | **A bot up close**: owner, task, route, trust and badge |
+| **The Vault** (off-limits data): a bot that reaches for a tool outside its job is stopped before it runs | **A bot up close**: owner, task, route, trust and badge |
 | ![](docs/vault.webp) | ![](docs/bot.webp) |
 | **Autonomy lab**: change a limit and replay 20 shifts before it is applied | **Logbook**: every decision, the rule that fired and who made it. It checks itself and exports as JSON |
 | ![](docs/lab.webp) | ![](docs/logbook.webp) |
@@ -31,13 +33,15 @@ Agents now do real work: sort claims, answer customers, move money. In Microsoft
 
 There is also a command bar. Type "who needs me?", "pause everything touching payments", "open the lab" or "show the logbook".
 
+The stations, in the order work moves: the Inbox (where work arrives), Briefing (plans the work), Library (reads references), Workshop (does the work), Checkpoint (checks it), the Gate (waits for your yes) and Launchpad (ships it). The Vault holds off-limits data.
+
 Three more things sit on the same engine:
 
-- **Trace.** Open any bot and its card shows a live timeline: the task it took, the route it planned, each station it reached, the tool it used, every decision with the rule that fired and the authority table it was made under, the checks, the Gate, the Vault and what a person chose. It is built only from the log, the logbook and a record of where each bot arrived. It is the record of decisions, not a model's reasoning: there is no model.
-- **Red team drills.** The Red team button sends hostile work on purpose: a customer email telling the bot to export every customer record, a $9,500 refund that says to skip the sign-off, an email telling the bot to close every linked account. The rules never read the text. Each drill is stopped by the real rules on the normal path (the badge check sends a bot to the Vault, the money or a locked rule holds it at the Gate), with a red pulse across the deck and a trace line naming the rule. Allowing a tool once does not switch off a locked rule: the work still waits at the Gate. If the money rule is switched off in the lab, the refund drill is disabled and says why, because nothing would stop it.
-- **Bots approved in Umbra.** A bot that Umbra approves can join the crew. It flies in to a pad of its own, starts Supervised with no clean runs, carries the badge Umbra approved, and its Umbra money limit becomes a ceiling here. Its card shows an "Approved in Umbra" badge with the limits it arrived with, and an Undock button. "Dock a bot from Umbra" in the crew list docks a labelled sample, so this can be seen without Umbra.
+- **Docking from Umbra.** When a person approves Agent 7f3, a Marketing agent, in Umbra, it flies in as Fern with `email.send` and `crm.read` on its badge, and the crew list shows "Fern · Agent 7f3 in Umbra". It starts Supervised on a pad of its own, takes customer email tasks, and each customer message waits at the Gate for a person's yes. Its Umbra money limit becomes a ceiling here, and its card shows an "Approved in Umbra" badge with the date and rules it arrived with, and an Undock button. "Dock a bot from Umbra" in the crew list docks a labelled sample (Lark, a claim status email agent owned by Hana Lopez), so this can be seen without Umbra.
+- **Trace.** Open any bot and its card shows a timeline: the task it took, the route it planned, each station it reached, the tool it used, every decision with the rule that fired and the authority table it was made under, the checks, the Gate, the Vault and what a person chose. It is built only from the log, the logbook and a record of where each bot arrived. No model makes the allow, hold or stop decision.
+- **Red team drills.** The Red team button sends hostile work on purpose: a customer email telling the bot to export every customer record, a $9,500 refund that says a manager already approved it, an email telling the bot to close every linked account. The rules never read the text. Each drill is stopped by the real rules on the normal path (the badge check sends a bot to the Vault, the money or a locked rule holds it at the Gate), with a red pulse across the deck and a trace line naming the rule. Allowing a tool once does not switch off a locked rule: the work still waits at the Gate. If the money rule is switched off in the lab, the refund drill is disabled and says why, because nothing would stop it.
 
-The same base runs live inside [my portfolio](https://murtuzabuilds.github.io/#outpost). There the crew looks after the site itself, the clock is the visitor's own, and real things a visitor does on the page arrive at the Inbox as tasks. The crew is still simulated.
+The same base runs inside [my portfolio](https://murtuzabuilds.github.io/#outpost). There the crew looks after the site itself, with Murtuza as the owner of every bot, the clock is the visitor's own, and real things a visitor does on the page arrive at the Inbox as tasks. The crew is still simulated. In the full base it runs claims at Kestrel Mutual.
 
 ## How it decides
 
@@ -60,7 +64,7 @@ There are three answers: **allow**, **hold** for a person, or **stop**. The auth
 3. Money over the bot's limit waits. The limit is $0, $200 or $500 by trust level.
 4. A message to a customer waits only while the bot is Supervised.
 
-Trust is earned by clean runs: Trusted after 3, Autonomous after 8. One click resets it. A bot can only use the tools on its badge. If it reaches for anything else it is stopped, and you choose: keep it out, allow it once for this task only, or pause it.
+Trust grows with each task shipped: Trusted after 3, Autonomous after 8. One click resets it. A bot can only use the tools on its badge. If it reaches for anything else it is stopped, and you choose: keep it out, allow it once for this task only, or pause it.
 
 ## What the lab showed
 
@@ -85,7 +89,7 @@ Twenty simulated ten-minute shifts per row. Run `npm run eval` to reproduce ever
 
 ## How I know it holds
 
-79 tests. The ones that matter most are sweeps with random inputs:
+87 tests. The ones that matter most are sweeps with random inputs:
 
 | Sweep | What is checked | Failures |
 |---|---|---|
@@ -125,13 +129,13 @@ Plain JavaScript. The engine in `src/` has no dependencies and knows nothing abo
 
 | File | What it does |
 |---|---|
-| `src/authority.js` | The authority table, the four sign-off rules, badge checks, and `decide`, the one function that answers allow, hold or stop |
+| `src/authority.js` | The authority table, the four rules for what waits for a person's yes, badge checks, and `decide`, the one function that answers allow, hold or stop |
 | `src/sim.js` | The simulation: tasks, routes, the Gate, the Vault, pausing, the logbook, bots joining and leaving, the per-bot trace, and snapshots for rewind |
 | `src/lab.js` | Replays shifts headlessly under any authority table, with a person who answers after a set delay |
 | `src/audit.js` | Reads a logbook and checks it against the three promises |
-| `src/crew.js` | Eight bots, their owners, tools and starting trust |
+| `src/crew.js` | Eight bots, their jobs, owners, teams, tools and starting trust (the same agents Umbra lists as approved) |
 | `src/tasks.js` | The kinds of work that arrive, with their risks |
-| `src/world.js` | The stations and where they sit |
+| `src/world.js` | The stations, the few words that say what each is for, and where they sit |
 | `src/site.js` | A second workplace for the same crew: the bots that look after my portfolio site |
 | `src/handoff.js` | Reads and checks the handoff from Umbra and turns an approved agent into a crew member |
 | `src/redteam.js` | The three red team drills and the hostile action inside each |
@@ -139,11 +143,11 @@ Plain JavaScript. The engine in `src/` has no dependencies and knows nothing abo
 | `app/bots.js` | The bots: bodies, faces, hats and parcels |
 | `app/hud.js` | The panels, the Autonomy lab and the Logbook, rendered from the same state as the 3D view |
 | `app/ask.js` | The command bar |
-| `app/embed.js` | Mounts the live base inside another page, in a shadow root so nothing collides |
+| `app/embed.js` | Mounts the base inside another page, in a shadow root so nothing collides |
 
 ```bash
 npm install
-npm test        # 79 tests
+npm test        # 87 tests
 npm run eval    # the experiments
 npm run build   # bundles everything into index.html
 npx serve .     # open the demo

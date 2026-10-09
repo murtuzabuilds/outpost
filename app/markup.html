@@ -1,11 +1,13 @@
 <div class="app" id="app" data-zoom="mid">
-  <canvas id="gl" role="img" aria-label="A floating base seen from above. Eight small robots carry parcels between stations: Inbox, Briefing, Library, Workshop, Checkpoint, the Gate, Launchpad, a Charging Dock and a Vault."></canvas>
+  <canvas id="gl" role="img" aria-label="A floating base seen from above. Eight small robots carry parcels between stations: Inbox (where work arrives), Briefing (plans the work), Library (reads references), Workshop (does the work), Checkpoint (checks it), the Gate (waits for your yes), Launchpad (ships it), a Charging Dock and the Vault (off-limits data)."></canvas>
   <div class="tags" id="tags" aria-hidden="true"></div>
 
   <header class="top">
     <div class="brand">
       <svg class="logo" viewBox="0 -13 293.28 53" role="img" aria-label="Outpost"><circle cx="17.32" cy="-8.6" r="2.79" fill="var(--accent)"/><path d="M17.32 1.96L32.94 10.98L32.94 29.02L17.32 38.04L1.7 29.02L1.7 10.98Z" fill="none" stroke="var(--accent)" stroke-width="3.4" stroke-linejoin="miter"/><g class="eyes" fill="var(--accent)"><rect x="10.22" y="15" width="3.4" height="10" rx="1.7"/><rect x="21.02" y="15" width="3.4" height="10" rx="1.7"/></g><path d="M51.34 0V30.299999999999997L59.34 38.3H67.94L75.94 30.299999999999997V0M92.64 1.7H120.64M106.64 1.7V40M136.34 40V1.7H150.94L158.94 9.7V15.7L150.94 23.7H136.34M192.96 1.96L208.58 10.98L208.58 29.02L192.96 38.04L177.34 29.02L177.34 10.98ZM251.28 1.7H233.98L226.98 8.7V13L233.98 20H242.58L249.58 27V31.299999999999997L242.58 38.3H225.28M265.28 1.7H293.28M279.28 1.7V40" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="miter" stroke-miterlimit="6"/></svg>
       <div class="brand-t">Kestrel Mutual crew <i>demo</i></div>
+      <p class="brand-s">The control room for the person who runs a company's AI agents.</p>
+      <nav class="xl" aria-label="Related links"><a href="https://murtuzabuilds.github.io/umbra/" target="_blank" rel="noopener">Umbra &#8599;</a><i aria-hidden="true">&middot;</i><a href="https://murtuzabuilds.github.io/outpost/case-study.html" target="_blank" rel="noopener">Case study</a><i aria-hidden="true">&middot;</i><a href="https://github.com/murtuzabuilds/outpost" target="_blank" rel="noopener">Code</a><i aria-hidden="true">&middot;</i><a href="https://murtuzabuilds.github.io/" target="_blank" rel="noopener">Portfolio</a></nav>
     </div>
     <div class="stats" id="stats" aria-live="polite"></div>
   </header>
@@ -25,11 +27,12 @@
     <span data-c="gate"><i></i>Decide at the Gate</span>
     <span data-c="lab"><i></i>Try the lab</span>
     <button type="button" id="coachX" aria-label="Hide tips">&times;</button>
+    <p class="coach-g"><b>The Gate</b> waits for your yes. <b>The Vault</b> holds off-limits data. Hover or tap any station name to see what it does.</p>
   </div>
 
   <footer class="bar">
     <div class="time">
-      <button type="button" class="live" id="liveBtn" aria-label="Back to live"><i></i><span id="liveTxt">LIVE</span></button>
+      <button type="button" class="live" id="liveBtn" aria-label="Back to now"><i></i><span id="liveTxt">NOW</span></button>
       <div class="track"><div class="marks" id="marks"></div><input type="range" id="scrub" min="0" max="100" value="100" step="1" aria-label="Rewind the last few minutes"></div>
       <span class="clock" id="clock">09:00:50</span>
     </div>
@@ -67,5 +70,5 @@
     <b>Outpost needs 3D graphics to run.</b>
     <span>This browser has them turned off or could not load the 3D library. Try another browser or reload the page.</span>
   </div>
-  <div class="credit">Designed and built by Murtuza. Fictional company, simulated bots.</div>
+  <div class="credit">Designed and built by Murtuza. Interactive demo &middot; sample data, simulated bots.</div>
 </div>

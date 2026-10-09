@@ -3,7 +3,7 @@
 // Companies already keep a delegation of authority for people: who may sign off what, and up to how
 // much. This is the same instrument for a crew of agents. It is plain data: a trust ladder (how many
 // clean runs earn each level, and how much money a bot at that level may move alone) and which of the
-// optional sign-off rules are switched on. `decide` takes an action a bot wants to take and answers
+// optional rules that hold work for a person's yes are switched on. `decide` takes an action a bot wants to take and answers
 // allow, hold or stop, with the rule that fired.
 // Nothing here is decided by a model, and nothing here knows about the simulation or the screen.
 // It looks only at the kind of action, the amount and who is asking. It never reads what is inside the work.

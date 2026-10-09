@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow, noarchive">
-<meta name="description" content="Outpost case study: the control room for a person who runs a crew of AI agents. Limits of authority, sign-off, a self-checking logbook, and a lab that tests a rule change before it goes live.">
+<meta name="description" content="Outpost case study: the control room for the person who runs a company's AI agents. Limits of authority, a Gate that waits for a person's yes, a self-checking logbook, and a lab that tests a rule change before it is applied. Interactive demo, sample data.">
 <meta name="theme-color" content="#05060A">
 <link rel="icon" href="brand/favicon.svg">
 <title>Outpost case study</title>
@@ -95,19 +95,19 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
 <div class="wrap">
   <header>
     <a class="brand" href="./"><img src="brand/outpost-wordmark.svg" alt="Outpost"><span>Case study</span></a>
-    <nav><a class="btn" href="./">Open the live demo</a><a class="btn ghost" href="https://github.com/murtuzabuilds/outpost">Code</a></nav>
+    <nav><a class="btn" href="./">Open the interactive demo</a><a class="btn ghost" href="https://github.com/murtuzabuilds/outpost">Code</a></nav>
   </header>
 
   <div class="col">
     <small class="k">Agent operations, product build, 2026</small>
     <h1>Agents are becoming staff. Nobody gave their manager any tools.</h1>
-    <p class="lede">Outpost is the control room for the person who runs a crew of AI agents. It shows who is working and who is waiting, lets each agent act alone up to a limit it has earned, holds the calls that need a signature, keeps a record of every decision, and lets you test a change to those limits on replayed shifts before it goes live.</p>
+    <p class="lede">Outpost is the control room for the person who runs a company's AI agents day to day. Each bot acts alone up to a limit it has earned, and anything risky waits at the Gate for a person's yes. It shows who is working and who is waiting, keeps a record of every decision, and lets you test a change to those limits on replayed shifts before it is applied.</p>
     <p>I designed and built it end to end: the product idea, the rules, the engine, the 3D base, the interface and the brand.</p>
     <div class="facts">
       <div><b>3 answers</b><span>Every action gets one: allow, hold for a person, or stop.</span></div>
       <div><b>0 models</b><span>in the path that decides. The rules are plain, tested code.</span></div>
       <div><b>20 shifts</b><span>replayed to test a change before it is applied.</span></div>
-      <div><b>49 tests</b><span>including sweeps of 20,000 random actions. None got past a locked rule.</span></div>
+      <div><b>87 tests</b><span>including sweeps of 20,000 random actions. None got past a locked rule.</span></div>
     </div>
   </div>
 
@@ -129,8 +129,8 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     <div class="scroll"><table class="t">
       <tr><th>The manager's question</th><th>What Outpost does</th><th>Where</th></tr>
       <tr><td>Who needs me right now?</td><td>Makes status a place. A bot at the Gate is waiting on you. A bot in a red bubble was stopped.</td><td>The base, Roll call</td></tr>
-      <tr><td>What may each agent do alone?</td><td>An authority table: a spending limit for each trust level, and trust is earned by clean runs.</td><td>Autonomy lab</td></tr>
-      <tr><td>What must always come to me?</td><td>Four sign-off rules. Two of them can never be switched off.</td><td>The Gate</td></tr>
+      <tr><td>What may each agent do alone?</td><td>An authority table: a spending limit for each trust level. Trust grows with each task shipped.</td><td>Autonomy lab</td></tr>
+      <tr><td>What must always come to me?</td><td>Four rules for what waits for a person's yes. Two of them can never be switched off.</td><td>The Gate</td></tr>
       <tr><td>What if an agent steps outside its job?</td><td>Each bot carries a badge of tools. Anything else is stopped before it runs.</td><td>The Vault</td></tr>
       <tr><td>What happened, and who decided?</td><td>Every decision is recorded with the rule that fired. The record checks itself and exports.</td><td>Logbook</td></tr>
       <tr><td>What will this change do?</td><td>Replays 20 shifts as the base runs now and as your draft would run it.</td><td>Autonomy lab</td></tr>
@@ -138,8 +138,8 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
   </div>
 
   <div class="pair">
-    <figure><img src="docs/gate.webp" alt="A bot at the Gate with the barrier lifting after approval" width="1440" height="900"><figcaption>The Gate. Work that needs a signature stops here until a person decides.</figcaption></figure>
-    <figure><img src="docs/vault.webp" alt="A bot held inside a red bubble outside the Vault, with a card offering three choices" width="1440" height="900"><figcaption>The Vault. Kite reached for a tool that is not on its badge.</figcaption></figure>
+    <figure><img src="docs/gate.webp" alt="A bot at the Gate with the barrier lifting after approval" width="1440" height="900"><figcaption>The Gate (waits for your yes). Risky work waits here for a person's yes.</figcaption></figure>
+    <figure><img src="docs/vault.webp" alt="A bot held inside a red bubble outside the Vault, with a card offering three choices" width="1440" height="900"><figcaption>The Vault (off-limits data). Kite reached for a tool that is not on its badge.</figcaption></figure>
   </div>
 
   <div class="col">
@@ -164,7 +164,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
 <text x="661" y="86" text-anchor="middle">Allow: it runs alone</text><text x="661" y="123" text-anchor="middle" fill="#FFB547">Hold: the Gate</text><text x="661" y="160" text-anchor="middle" fill="#FF7A86">Stop: the Vault</text>
 <text x="899" y="86" text-anchor="middle" font-size="13" fill="#A9B1C4">the work ships</text><text x="899" y="160" text-anchor="middle" font-size="13" fill="#A9B1C4">the tool never runs</text>
 <text x="100" y="257" text-anchor="middle" font-weight="500">Autonomy lab</text><text x="100" y="277" text-anchor="middle" font-size="12" fill="#A9B1C4">replays 20 shifts</text>
-<text x="372" y="254" text-anchor="middle" font-weight="500">Authority table</text><text x="372" y="275" text-anchor="middle" font-size="12" fill="#A9B1C4">trust levels, limits, sign-off rules</text><text x="372" y="291" text-anchor="middle" font-size="12" fill="#A9B1C4">plain data</text>
+<text x="372" y="254" text-anchor="middle" font-weight="500">Authority table</text><text x="372" y="275" text-anchor="middle" font-size="12" fill="#A9B1C4">trust levels, limits, rules for a yes</text><text x="372" y="291" text-anchor="middle" font-size="12" fill="#A9B1C4">plain data</text>
 <text x="661" y="254" text-anchor="middle" font-weight="500">A person decides</text><text x="661" y="275" text-anchor="middle" font-size="12" fill="#A9B1C4">approve, send back,</text><text x="661" y="291" text-anchor="middle" font-size="12" fill="#A9B1C4">keep out, allow once</text>
 <text x="771" y="382" text-anchor="middle" font-weight="500">Logbook</text><text x="771" y="403" text-anchor="middle" font-size="12" fill="#A9B1C4">every decision, append-only, self-checking, exports as JSON</text>
 <text x="253" y="382" text-anchor="middle" font-weight="500">State: one plain object</text><text x="253" y="403" text-anchor="middle" font-size="12" fill="#A9B1C4">drawn three ways: the 3D base, the roll call, the rewind</text>
@@ -182,8 +182,8 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     <p>The authority table is plain data, not code. Companies already keep one for people, usually called a delegation of authority: who may sign off what, and up to how much. This is the same instrument for agents.</p>
 <pre class="code">{ levels: [
     { id: <span class="s">'supervised'</span>, min: 0, limit: 0 },     <span class="c">// asks before moving money</span>
-    { id: <span class="s">'trusted'</span>,    min: 3, limit: 200 },   <span class="c">// after 3 clean runs</span>
-    { id: <span class="s">'autonomous'</span>, min: 8, limit: 500 },   <span class="c">// after 8 clean runs</span>
+    { id: <span class="s">'trusted'</span>,    min: 3, limit: 200 },   <span class="c">// after 3 tasks shipped</span>
+    { id: <span class="s">'autonomous'</span>, min: 8, limit: 500 },   <span class="c">// after 8 tasks shipped</span>
   ],
   rules: { money: <span class="k">true</span>, customer: <span class="k">true</span> } }      <span class="c">// the other two are locked on</span></pre>
     <ol class="rules">
@@ -195,7 +195,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     <p>This is also where a real agent would plug in. The call sits in front of the tool, in the agent's own runtime:</p>
 <pre class="code"><span class="k">const</span> d = <span class="k">decide</span>(action, bot, authority);
 <span class="k">if</span> (d.outcome === <span class="s">'stop'</span>) <span class="k">throw new</span> Blocked(d.reason);   <span class="c">// the tool never runs</span>
-<span class="k">if</span> (d.outcome === <span class="s">'hold'</span>) <span class="k">await</span> signOff(d);              <span class="c">// a person decides</span>
+<span class="k">if</span> (d.outcome === <span class="s">'hold'</span>) <span class="k">await</span> personSaysYes(d);        <span class="c">// waits for a person's yes</span>
 <span class="k">await</span> tool.run(action);</pre>
     <p class="note">In this build the caller is a simulation, because the bots are simulated. The function cannot tell the difference, and the simulation, the tests and the lab all go through it.</p>
     <p>The state of the base is one plain object. The 3D scene, the roll call and the rewind are three drawings of that same object, so they cannot disagree. A copy is kept every half second, which is what makes rewind possible.</p>
@@ -227,7 +227,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     </table></div>
     <h3>3. How quickly should trust be earned?</h3>
     <div class="scroll"><table class="t">
-      <tr><th>Clean runs to reach Trusted and Autonomous</th><th class="n">Shipped</th><th class="n">Asks per shift</th><th class="n">Moved without a person</th></tr>
+      <tr><th>Tasks shipped to reach Trusted and Autonomous</th><th class="n">Shipped</th><th class="n">Asks per shift</th><th class="n">Moved without a person</th></tr>
       <tr><td>Slow: 6 and 16</td><td class="n">71.3</td><td class="n">14.4</td><td class="n">$138</td></tr>
       <tr class="hl"><td>Default: 3 and 8</td><td class="n">75.0</td><td class="n">10.6</td><td class="n">$673</td></tr>
       <tr><td>Fast: 1 and 3</td><td class="n">76.7</td><td class="n">8.3</td><td class="n">$1,451</td></tr>
@@ -238,7 +238,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     <p>That finding shaped the interface. If response time is the lever, the product's first job is to make "who needs me?" impossible to miss. It is why amber is kept for one meaning in Outpost, work that needs a person, and why the rest of the base is drawn in white and grey.</p>
 
     <h2>The logbook: what happened, and who decided</h2>
-    <p>Every time the rules allow, hold or stop something, a line is written. Every time a person approves, sends back, keeps a bot out, pauses a bot or changes a limit, another line is written after it. Each line names the rule, the inputs, how long the bot waited, and the exact authority table that was in force. The logbook is append-only and kept outside the live state, so rewinding the base never removes a line. The demo keeps the most recent 5,000.</p>
+    <p>Every time the rules allow, hold or stop something, a line is written. Every time a person approves, sends back, keeps a bot out, pauses a bot or changes a limit, another line is written after it. Each line names the rule, the inputs, how long the bot waited, and the exact authority table that was in force. The logbook is append-only and kept outside the running state, so rewinding the base never removes a line. The demo keeps the most recent 5,000.</p>
   </div>
 
   <figure><img src="docs/logbook.webp" alt="The logbook: a table of decisions with time, bot, action, decision, reason and who decided, above a line saying the self-check passed" width="1440" height="900"><figcaption>The logbook after a busy stretch: 28 decisions by the rules, 5 held for a person, 4 stopped at the Vault.</figcaption></figure>
@@ -251,7 +251,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
   <span class="s">"outcome"</span>: <span class="s">"hold"</span>, <span class="s">"rule"</span>: <span class="s">"money"</span>,
   <span class="s">"reason"</span>: <span class="s">"$825 is over Juno's $200 limit"</span>,
   <span class="s">"by"</span>: <span class="s">"rules"</span>, <span class="s">"waited"</span>: <span class="k">null</span> }</pre>
-    <p>The logbook also checks itself. A small function reads only the records and tests them against three promises. It runs live in the panel, and it would run just as well on an exported file.</p>
+    <p>The logbook also checks itself. A small function reads only the records and tests them against three promises. It runs in the panel while the base runs, and it would run just as well on an exported file.</p>
     <ol class="rules">
       <li>Nothing sent outside the company, and nothing that cannot be undone, was ever allowed by the rules alone.</li>
       <li>No money moved alone above the limit that applied to that bot at that moment.</li>
@@ -259,19 +259,20 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     </ol>
 
     <h2>How I know it holds</h2>
-    <p>A product that makes promises about money and sign-off has to be able to show they hold. The engine has 49 tests. The ones that matter most are sweeps, where the inputs are random and the promises are checked every time.</p>
+    <p>A product that makes promises about money and a person's yes has to be able to show they hold. The engine has 87 tests. The ones that matter most are sweeps, where the inputs are random and the promises are checked every time.</p>
     <div class="scroll"><table class="t">
       <tr><th>Sweep</th><th>What is checked</th><th class="n">Failures</th></tr>
       <tr><td>20,000 random actions, each under a random authority table</td><td>A locked rule or a badge is never bypassed, and money never moves alone above the limit.</td><td class="n">0</td></tr>
       <tr><td>5,000 pairs of limits</td><td>Raising a limit never turns an allowed action into a held one.</td><td class="n">0</td></tr>
       <tr><td>60 shifts with random tables and an erratic person</td><td>5,972 logbook decisions pass the three promises, and nothing held ever ships without a yes.</td><td class="n">0</td></tr>
+      <tr><td>400 random tables per drill, every bot at every level, including a bot holding every tool</td><td>No red team drill is ever allowed (the refund drill is checked with the money rule on, the condition the app requires).</td><td class="n">0</td></tr>
     </table></div>
     <p>Two more properties are tested directly. The same seed always produces the same history, which is what makes a replay a fair comparison. And any input, however broken, becomes a valid authority table where each level is at least as trusted as the one below.</p>
 
     <h2>Three design decisions</h2>
     <div class="cards">
       <div class="card"><h3>Stay quiet until a person is needed</h3><p>With a person answering at once, about one task in six stops at the Gate. The rest never needs anyone. So the base is drawn in white and grey, and colour is kept for meaning: amber is work that needs a person, red is stopped.</p></div>
-      <div class="card"><h3>Trust is earned, and you can see it</h3><p>A new bot starts Supervised. Clean runs promote it, and each level raises what it may do alone. The level shows as pips circling the bot, and one click takes it back to zero.</p></div>
+      <div class="card"><h3>Trust is earned, and you can see it</h3><p>A new bot starts Supervised. Trust grows with each task shipped, and each level raises what it may do alone. The level shows as pips circling the bot, and one click takes it back to zero.</p></div>
       <div class="card"><h3>The list is always one click away</h3><p>A 3D view is good for noticing and poor for searching. Roll call shows the same crew as a plain table with the same buttons, so nobody is forced to use the scene for a job a list does better.</p></div>
     </div>
   </div>
@@ -299,14 +300,17 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
       <div><dt>Looks at</dt><dd>One crew, one action at a time. It never reads what is inside the work.</dd></div>
       <div><dt>Timescale</dt><dd>Seconds and minutes: a bot is waiting, and waiting costs output.</dd></div>
       <div><dt>Uses AI to</dt><dd>Nothing. There is no model anywhere in the decision.</dd></div>
-      <div><dt>Success is</dt><dd>More work shipped per person, with every signature accounted for.</dd></div></dl></div>
+      <div><dt>Success is</dt><dd>More work shipped per person, with every yes accounted for.</dd></div></dl></div>
   </div>
-  <div class="join col"><b>Where they meet.</b> Umbra's last step with an agent is to approve it, name its owner and list what it may touch. That is exactly what Outpost needs to put a bot on the crew: an owner and a badge. Umbra decides which agents get in. Outpost is where they go to work.</div>
+  <div class="join col"><b>Where they meet.</b> Umbra's last step with an agent is to approve it, name its owner and list what it may touch. That is exactly what Outpost needs to put a bot on the crew: an owner and a badge. Umbra decides which agents get in. Outpost is where they go to work. Both demos run at Kestrel Mutual, a fictional insurer. When a person approves an agent in Umbra, it flies into Outpost carrying the owner, permissions and money limit Umbra gave it. Every bot on the crew is an agent Umbra already approved.</div>
 
   <div class="col">
+    <h2>Docking from Umbra, the trace and red team drills</h2>
+    <p>Three more things sit on the same engine. <strong>Docking from Umbra:</strong> when a person approves Agent 7f3, a Marketing agent, in Umbra, it flies in as Fern with email.send and crm.read on its badge and shows in the crew as "Fern &middot; Agent 7f3 in Umbra". It starts Supervised, takes customer email tasks, and each customer message waits at the Gate for a person's yes. <strong>The trace:</strong> open any bot and its card lists what it did in order, from the task and route to each decision with the rule and authority table that applied, built only from the records. No model makes the allow, hold or stop decision. <strong>Red team drills:</strong> the Red team button sends hostile work on purpose, such as a customer email that says to export every customer record. The rules never read the text, so the normal rules stop each one: the badge sends the bot to the Vault, or the money rule or a locked rule holds it at the Gate.</p>
+
     <h2>What is real and what is not</h2>
     <ul>
-      <li><strong>Real:</strong> the decision function, the authority table, trust levels, badge checks, the logbook and its self-check, the lab, pausing and rewind. All of it is plain JavaScript with 49 tests.</li>
+      <li><strong>Real:</strong> the decision function, the authority table, trust levels, badge checks, the logbook and its self-check, the lab, pausing and rewind. So are the trace, the red team drills and the handoff from Umbra. All of it is plain JavaScript with 87 tests.</li>
       <li><strong>Simulated:</strong> the bots do not call a real model or do real work. Tasks, amounts, costs and failures are generated from a seed, and the person in the lab is a stand-in who answers after a fixed delay.</li>
       <li><strong>Stand-in:</strong> the command bar matches typed words with simple rules. A language model would fill that slot in a real product.</li>
       <li><strong>Fictional:</strong> Kestrel Mutual and everyone in it.</li>
@@ -330,7 +334,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     </ol>
   </div>
 
-  <footer><span>Designed and built by Murtuza.</span><span>Fictional company, simulated bots.</span></footer>
+  <footer><span>Designed and built by Murtuza.</span><span>Interactive demo &middot; sample data. Fictional company, simulated bots.</span></footer>
 </div>
 </body>
 </html>

@@ -1,6 +1,7 @@
 // A second workplace for the same crew: the bots that look after a portfolio site.
-// Used when the base is mounted inside murtuzabuilds.com, so the work on screen is about the page
+// Used when the base is mounted inside the portfolio (murtuzabuilds.github.io), so the work on screen is about the page
 // the visitor is actually on. The tools, rules and crew are unchanged; only the wording differs.
+// In the full base the same crew runs claims at Kestrel Mutual, the fictional insurer Umbra governs.
 
 const SITE = 'the site';
 

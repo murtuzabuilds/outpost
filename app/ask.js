@@ -1,6 +1,6 @@
 // The command bar. Typed requests are matched with plain rules, not a language model,
 // so the same words always do the same thing. In a real product a model would fill this slot.
-import { byId, statusOf } from '../src/index.js';
+import { byId, statusOf, STATIONS } from '../src/index.js';
 
 const AREAS = [
   { re: /pay|money|refund|invoice|billing/, prefix: 'payments', label: 'payments' },
@@ -9,6 +9,8 @@ const AREAS = [
   { re: /account/, prefix: 'accounts', label: 'accounts' },
   { re: /claim/, prefix: 'claims', label: 'claims' },
 ];
+// One line that says what every station is for, for anyone asking for help.
+const GUIDE = ['beacon', 'library', 'workshop', 'check', 'gate', 'launch', 'vault'].map(id => `${STATIONS[id].name.replace(/^The /, 'the ')} (${STATIONS[id].gloss})`).join(', ');
 const list = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
 
 export function ask(text, api) {
@@ -43,8 +45,10 @@ export function ask(text, api) {
   if (/rewind|what (just )?happened|go back|replay/.test(q)) { api.rewind(25); return 'Rewound 25 seconds. Drag the timeline to look around, then press the button on its left to return.'; }
   if (/trust|level|limit/.test(q) && bot) { api.select(bot.id); return `${bot.name}'s trust and limits are in the panel.`; }
   if (bot) { api.select(bot.id); return `${bot.name}: ${statusOf(s, bot.id).toLowerCase()}.`; }
-  if (/gate|approv/.test(q)) { api.focus('gate'); return 'The Gate is where risky work waits for you.'; }
-  if (/vault|secret|off.?limits/.test(q)) { api.focus('vault'); return 'The Vault holds what no bot may touch without being let in.'; }
-  if (/help|what can|how/.test(q)) return 'Try: "who needs me?", "where is Kite?", "pause everything touching payments", "open the lab", "show the logbook", "rewind".';
+  if (/approv/.test(q)) { api.focus('gate'); return 'The Gate waits for your yes: risky work stops there until a person decides.'; }
+  if (/secret|off.?limits/.test(q)) { api.focus('vault'); return 'The Vault holds off-limits data. No bot may touch it without being let in.'; }
+  const st = Object.values(STATIONS).find(x => new RegExp('\\b' + x.name.toLowerCase().replace(/^the /, '').split(' ')[0] + '\\b').test(q));
+  if (st) { api.focus(st.id); return `${st.name} (${st.gloss}). ${st.does}`; }
+  if (/help|what can|how|station/.test(q)) return `The stations: ${GUIDE}. Try: "who needs me?", "where is Kite?", "pause everything touching payments", "open the lab", "show the logbook", "rewind".`;
   return 'I can find bots, pause them, send tasks and rewind. Try "who needs me?"';
 }

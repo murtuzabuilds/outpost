@@ -66,7 +66,7 @@ export function boot(root = document, opts = {}) {
     Wd = app.clientWidth; Hd = app.clientHeight; renderer.setSize(Wd, Hd, false);
     if (!Wd || !Hd) return;
     const aspect = Wd / Hd, small = Wd <= 700;
-    edgeTop = embed ? 8 : small ? 104 : 74; edgeBot = embed ? 62 : small ? 196 : 126;
+    edgeTop = embed ? 8 : small ? 150 : 74; edgeBot = embed ? 62 : small ? 196 : 126;
     // In an embed the host page may keep words over the top of the scene; `inset` is that height,
     // and the base is fitted and centred in what is left below it.
     const inset = embed ? Math.min(Hd * 0.5, (opts.topInset && opts.topInset()) || (small ? 150 : 0)) : 0, free = Hd - inset;   // on a phone the alert card sits at the top
@@ -120,7 +120,7 @@ export function boot(root = document, opts = {}) {
 
   // ---------- labels in the scene ----------
   const slabs = {};
-  for (const [id, s] of Object.entries(STATIONS)) { const d = document.createElement('div'); d.className = 'slab'; d.style.setProperty('--c', s.color); d.dataset.station = id; d.innerHTML = `${s.name}<b></b>`; tags.appendChild(d); slabs[id] = d; }
+  for (const [id, s] of Object.entries(STATIONS)) { const d = document.createElement('div'); d.className = 'slab'; d.style.setProperty('--c', s.color); d.dataset.station = id; d.title = `${s.name}: ${s.gloss}`; d.innerHTML = `${s.name}<em class="gl">${s.gloss}</em><b></b>`; tags.appendChild(d); slabs[id] = d; }
   CREW.forEach(c => ensureBot(c.id));
   const v3 = new T.Vector3();
   const put = (el, x, y, z, ox, oy, ax, ay = '-100%') => {
@@ -207,11 +207,11 @@ export function boot(root = document, opts = {}) {
     } else if (panel) { li._k = null; const y = li.querySelector('.scroll'), top = y ? y.scrollTop : 0; setHTML(li, panel === 'roll' ? hud.list(v, past) : hud.ledger(past ? sim.ledger.filter(e => e.t <= v.t) : sim.ledger, ledFilter, v)); const y2 = li.querySelector('.scroll'); if (y2 && top) y2.scrollTop = top; }
     if (li.dataset.tab !== (panel || '')) li.dataset.tab = panel || '';
     $('#clock').textContent = hud.clock(v.t);
-    const lb = $('#liveBtn'); lb.classList.toggle('past', past); $('#liveTxt').textContent = past ? 'BACK TO LIVE' : 'LIVE';
+    const lb = $('#liveBtn'); lb.classList.toggle('past', past); $('#liveTxt').textContent = past ? 'BACK TO NOW' : 'NOW';
     const sc = $('#scrub'); sc.max = snaps.length - 1; if (!past) sc.value = snaps.length - 1; else if (document.activeElement !== sc) sc.value = viewIdx;
     if (app.dataset.list !== (panel ? '1' : '0')) app.dataset.list = panel ? '1' : '0';
     setHTML($('#marks'), hud.marks(sim.state, snaps[0].t, snaps[snaps.length - 1].t));
-    for (const [id, el] of Object.entries(slabs)) { const n = id === 'gate' ? v.approvals.length : id === 'inbox' ? v.queue.length : id === 'vault' ? v.incidents.length : 0, b = el.lastChild, txt = n ? String(n) : ''; if (b.textContent !== txt) b.textContent = txt; }
+    for (const [id, el] of Object.entries(slabs)) { el.classList.toggle('on', !!sel && sel.type === 'station' && sel.id === id); const n = id === 'gate' ? v.approvals.length : id === 'inbox' ? v.queue.length : id === 'vault' ? v.incidents.length : 0, b = el.lastChild, txt = n ? String(n) : ''; if (b.textContent !== txt) b.textContent = txt; }
     for (const a of v.agents) { const t = btag[a.id]; if (!t) continue; t.classList.toggle('sel', !!sel && sel.type === 'bot' && sel.id === a.id); t.classList.toggle('need', v.approvals.includes(a.id)); t.classList.toggle('held', a.state === 'held'); }
     dirty = false;
   }

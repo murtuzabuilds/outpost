@@ -1,7 +1,7 @@
 {
   "name": "outpost",
   "version": "0.2.0",
-  "description": "Outpost: the control room for a person who runs a crew of AI agents. Limits of authority, sign-off, a self-checking logbook, and a lab that tests a rule change before it goes live.",
+  "description": "Outpost: the control room for the person who runs a company's AI agents. Limits of authority, a Gate that waits for a person's yes, a self-checking logbook, and a lab that tests a rule change before it is applied.",
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",

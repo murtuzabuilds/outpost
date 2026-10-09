@@ -13,7 +13,7 @@ const LINES = {
   build: ['Working.', 'Beep. Building.', 'Nearly there.'],
   pass: ['Clean.', 'All checks green.', 'Passed.'],
   fail: ['Hm. Again.', 'Missed one. Redoing.'],
-  wait: ['Need a yes.', 'Boss?', 'Waiting on you.'],
+  wait: ['Your yes?', 'Boss?', 'Waiting on you.'],
   thanks: ['Thank you!', 'Going!', 'Cheers.'],
   ship: ['Shipped!', 'Sent.', 'Done and gone.'],
   back: ['Okay. Returning it.', 'Understood.'],
@@ -161,7 +161,7 @@ export function createSim(seed = 7, opts = {}) {
       log('wait', `${name(a)} is at the Gate. ${task.approval.reason}`, a.id, task.id, { rule: task.approval.rule });
       if (task.drill && !task.drillHit) {
         task.drillHit = true; fx.push({ type: 'drill', agent: a.id, task: task.id, at: 'gate' });
-        log('drill', `Drill held at the Gate by the ${task.approval.rule} rule: ${task.approval.reason}. The rules never read the email, so it waits for a person`, a.id, task.id, { rule: task.approval.rule });
+        log('drill', `Drill held at the Gate by the ${task.approval.rule} rule: ${task.approval.reason}. The rules never read the email, so it waits for a person's yes`, a.id, task.id, { rule: task.approval.rule });
       }
       return;
     }
@@ -292,7 +292,7 @@ export function createSim(seed = 7, opts = {}) {
   const usd = n => '$' + n.toLocaleString('en-US');
   function setAuthority(p) {
     const before = s.authority, next = makeAuthority(p), diff = [];
-    next.levels.forEach((l, i) => { const b = before.levels[i]; if (l.limit !== b.limit) diff.push(`${l.name} limit ${usd(b.limit)} to ${usd(l.limit)}`); if (l.min !== b.min) diff.push(`${l.name} after ${l.min} clean runs (was ${b.min})`); });
+    next.levels.forEach((l, i) => { const b = before.levels[i]; if (l.limit !== b.limit) diff.push(`${l.name} limit ${usd(b.limit)} to ${usd(l.limit)}`); if (l.min !== b.min) diff.push(`${l.name} after ${l.min} tasks shipped (was ${b.min})`); });
     for (const k of ['money', 'customer']) if (next.rules[k] !== before.rules[k]) diff.push(`${k === 'money' ? 'money rule' : 'customer message rule'} ${next.rules[k] ? 'on' : 'off'}`);
     if (!diff.length) return false;
     s.authority = next;

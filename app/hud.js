@@ -16,20 +16,25 @@ const flag = (v, a) => v.approvals.includes(a.id) ? 'need' : v.incidents.some(i 
 // On the portfolio the tools have site names; any tool id inside a sentence is shown the same way.
 const toolWords = t => WORDS.tools ? String(t).replace(/\b[a-z]+\.[a-z]+\b/g, m => WORDS.tools[m] || m) : String(t);
 const umbraChip = (c, short) => c.umbra ? `<i class="ub" title="Approved in Umbra${c.umbra.sample ? ' (sample handoff)' : ''}">${short ? 'Umbra' : 'Approved in Umbra' + (c.umbra.sample ? ' (sample)' : '')}</i>` : '';
+// Kestrel Mutual is the home workplace; on the portfolio (META set) the crew looks after the site instead.
+const home = () => !Object.keys(META).length;
+export const UMBRA_LINE = 'Every bot here was approved in Umbra: owner, permissions and money limit.';
+// A bot that docked from Umbra is shown with the name Umbra knows it by, e.g. "Fern · Agent 7f3 in Umbra".
+const dockedAs = (c, plain) => !c || !c.umbra ? '' : (plain ? ' &middot; ' : '<small class="un"> &middot; ') + (c.umbra.umbraName && c.umbra.umbraName !== c.name ? `${esc(c.umbra.umbraName)} in Umbra` : 'approved in Umbra') + (plain ? '' : '</small>');
 const limitFor = (a, v) => limitOf({ clean: a.clean, cap: byId[a.id].cap }, v.authority);
 
 export function stats(v, sim) {
   const working = v.agents.filter(a => a.task).length, need = v.approvals.length + v.incidents.length;
   return (sim ? `<div class="st simc"><span>Simulated crew</span></div>` : '') + `<div class="st"><b>${working}</b><span>working</span></div><div class="st ship"><b>${v.stats.shipped}</b><span>shipped</span></div>` +
     `<div class="st need ${need ? 'on' : ''}" data-act="need" ${need ? 'role="button" tabindex="0"' : ''}><b>${need}</b><span>need you</span></div>` +
-    `<div class="st spend"><b>$${v.stats.spend.toFixed(2)}</b><span>spent</span></div>`;
+    `<div class="st spend"><b>$${v.stats.spend.toFixed(2)}</b><span>simulated model cost</span></div>`;
 }
 
 const PLACE = { inbox: 'Inbox', beacon: 'Briefing', library: 'Library', workshop: 'Workshop', check: 'Checkpoint', gate: 'Gate', launch: 'Launchpad', dock: 'Dock', vault: 'Vault' };
 function brief(v, a) {
   if (a.paused) return 'Paused';
   if (a.state === 'held') return 'Stopped at the Vault';
-  if (a.state === 'wait') return 'Needs your yes';
+  if (a.state === 'wait') return 'Waits for your yes';
   if (a.state === 'arrive') return 'Flying in from Umbra';
   if (a.state === 'idle') return 'Charging';
   if (a.state === 'travel') return a.goal === 'home' ? 'Heading home' : a.goal === 'vault' ? 'Drifting to the Vault' : 'To the ' + PLACE[a.to];
@@ -38,9 +43,9 @@ function brief(v, a) {
 
 // `canDock` shows the sample button: there is room on the dock and the view is live.
 export function crew(v, sel, canDock) {
-  return `<h2>Crew<span>${v.agents.length} bots</span></h2>` + v.agents.map(a => {
+  return `<h2>Crew<span>${v.agents.length} bots</span></h2>${home() ? `<p class="cw-u">${UMBRA_LINE}</p>` : ''}` + v.agents.map(a => {
     const c = byId[a.id];
-    return `<button type="button" class="cw ${flag(v, a)} ${a.guest ? 'guest' : ''} ${sel && sel.type === 'bot' && sel.id === a.id ? 'sel' : ''}" data-bot="${a.id}" style="--c:${c.color}">${av(c.color)}<span class="n"><b>${esc(c.name)}${umbraChip(c, true)}</b><em>${esc(brief(v, a))}</em></span>${pips(a.clean, v.authority)}</button>`;
+    return `<button type="button" class="cw ${flag(v, a)} ${a.guest ? 'guest' : ''} ${sel && sel.type === 'bot' && sel.id === a.id ? 'sel' : ''}" data-bot="${a.id}" style="--c:${c.color}">${av(c.color)}<span class="n"><b>${esc(c.name)}${dockedAs(c)}</b><em>${esc(brief(v, a))}</em></span>${pips(a.clean, v.authority)}</button>`;
   }).join('') + (canDock ? `<button type="button" class="dock-s" data-act="sample-dock"><span>Dock a bot from Umbra</span><i>Sample</i></button>` : '');
 }
 
@@ -56,7 +61,7 @@ function traceBlock(v, id, items, all) {
     return `<li class="k-${x.kind}${x.outcome ? ' d-' + x.outcome.replace(/ /g, '-') : ''}"><time>${clock(x.t)}</time><i></i><span>${TK[x.kind] ? `<b>${TK[x.kind]}</b>` : ''}${esc(toolWords(x.text))}${chips}</span></li>`;
   }).join('');
   return `<div class="trace"><div class="tr-h"><small>Trace</small>${items.length > SHOW ? `<button type="button" data-act="traceall">${all ? 'Show fewer' : `Show ${Math.min(40, items.length)}`}</button>` : ''}</div>
-    <p class="tr-note">The record of what this bot did and what the rules decided, from the log and the logbook. It is not a model's reasoning: no model runs in Outpost.</p>
+    <p class="tr-note">The record of what this bot did and what the rules decided, from the log and the logbook. It is not a model's reasoning. No model makes the allow, hold or stop decision.</p>
     <ol class="tl"><li class="k-now"><time>now</time><i></i><span>${esc(statusOf(v, id))}</span></li>${rows || ''}</ol></div>`;
 }
 
@@ -69,13 +74,15 @@ function botPanel(v, id, past, items, all) {
     <span class="umb-n">Named "${esc(u.umbraName)}" in Umbra. Money ceiling set there: ${money(u.limit)}.</span>
     ${u.rules.length ? `<ul>${u.rules.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
     <p class="fine">Outpost enforces the badge and the money ceiling. The other limits are shown as Umbra wrote them.</p></div>` : '';
+  const glossed = task && task.route ? `<p class="route-g">${task.route.filter(s => s !== 'inbox').map(s => `<b>${STATIONS[s].name.replace(/^The /, 'the ')}</b> (${STATIONS[s].gloss})`).join(' &middot; ')}</p>` : '';
+  const approved = !u && home() && !c.umbra ? `<p class="ubl"><i class="ub">Umbra</i>Approved in Umbra &middot; owner ${esc(c.owner)}</p>` : '';
   const drill = task && task.drill ? `<q class="dq"><b>Drill</b>${esc(task.text)}</q>` : '';
   return `<div class="in-h" style="--c:${c.color}">${av(c.color)}<div><b>${esc(c.name)}</b><span>${esc(c.job)}. Owned by ${esc(c.owner)}${c.team ? ', ' + esc(c.team) : ''}</span></div><button type="button" class="x" data-act="close" aria-label="Close">&times;</button></div>
-  ${u ? '' : `<p class="quirk">${esc(c.quirk)}</p>`}${umb}
+  ${approved}${u ? '' : `<p class="quirk">${esc(c.quirk)}</p>`}${umb}
   <div class="now"><small>Right now</small><b>${esc(statusOf(v, id))}</b>${task ? `<span class="task"><code>${task.id}</code> ${esc(task.title)}</span>` : `<span class="task">No task. ${a.shipped} shipped so far.</span>`}${drill}</div>
-  ${route}
+  ${route}${glossed}
   ${items ? traceBlock(v, id, items, all) : ''}
-  <div class="lvl" style="--c:${c.color}"><small>Trust, earned by clean runs</small><div class="lvbar">${v.authority.levels.map((l, i) => `<i class="${i <= li ? 'on' : ''}"></i>`).join('')}</div><b>${lv.name}</b><span>${limit} ${nx ? `${nx.runs} more clean run${nx.runs > 1 ? 's' : ''} to ${nx.level.name}.` : 'Top level.'}</span></div>
+  <div class="lvl" style="--c:${c.color}"><small>Trust grows with each task shipped</small><div class="lvbar">${v.authority.levels.map((l, i) => `<i class="${i <= li ? 'on' : ''}"></i>`).join('')}</div><b>${lv.name}</b><span>${limit} ${nx ? `${nx.runs} more task${nx.runs > 1 ? 's' : ''} shipped to reach ${nx.level.name}.` : 'Top level.'}</span></div>
   <div class="badge"><small>Badge: what it may touch</small><ul>${c.tools.map(t => `<li>${esc(TOOLS[t])}</li>`).join('')}</ul></div>
   <div class="acts">${past ? '' : `<button type="button" class="btn sm ${a.paused ? 'pri' : ''}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${id}">${a.paused ? 'Resume' : 'Pause'}</button>${a.clean > 0 ? `<button type="button" class="btn sm ghost" data-act="revoke" data-id="${id}">Reset trust</button>` : ''}${a.guest ? `<button type="button" class="btn sm ghost" data-act="undock" data-id="${id}">Undock</button>` : ''}`}</div>`;
 }
@@ -97,8 +104,8 @@ function stationPanel(v, id) {
   if (id === 'gate') extra = `<div><small>When a person has to say yes</small><ul class="rules">${rulesNow(v.authority).map(r => `<li>${r}</li>`).join('')}</ul></div><p>${v.stats.approved} approved, ${v.stats.sentBack} sent back.</p>`;
   if (id === 'vault') extra = `<div><small>Inside</small><ul class="rules">${WORDS.vault.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><p>Nobody on the crew holds a key. ${v.stats.blocked} kept out, ${v.stats.granted} let in once.</p>`;
   if (id === 'check') extra = `<p>Work that fails goes back to the Workshop and is checked again.</p>`;
-  if (id === 'launch') extra = `<p>${v.stats.shipped} shipped today, costing $${v.stats.spend.toFixed(2)} in model use.</p>`;
-  return `<div class="in-h" style="--c:${s.color}"><i class="dot"></i><div><b>${s.name}</b><span>Station</span></div><button type="button" class="x" data-act="close" aria-label="Close">&times;</button></div>
+  if (id === 'launch') extra = `<p>${v.stats.shipped} shipped today. Simulated model cost: $${v.stats.spend.toFixed(2)}.</p>`;
+  return `<div class="in-h" style="--c:${s.color}"><i class="dot"></i><div><b>${s.name}</b><span>${s.gloss.charAt(0).toUpperCase() + s.gloss.slice(1)}</span></div><button type="button" class="x" data-act="close" aria-label="Close">&times;</button></div>
   <p>${esc(WORDS.does[id] || s.does)}</p>${extra}
   <div><small>Here now</small><div class="who">${here.length ? here.map(a => `<button type="button" data-bot="${a.id}" style="--c:${byId[a.id].color}">${byId[a.id].name}</button>`).join('') : '<p>Nobody.</p>'}</div></div>`;
 }
@@ -115,7 +122,7 @@ export function drillMenu(authority) {
 }
 
 export function alerts(v, past, ago, max = 2) {
-  if (past) return `<div class="al past"><i class="av" style="--c:#6F86FF"></i><div class="t"><b>You are looking at ${ago} seconds ago</b><span>Drag the timeline to move through it. Nothing changes while you look.</span></div><div class="b"><button type="button" class="btn pri" data-act="live">Back to live</button></div></div>`;
+  if (past) return `<div class="al past"><i class="av" style="--c:#6F86FF"></i><div class="t"><b>You are looking at ${ago} seconds ago</b><span>Drag the timeline to move through it. Nothing changes while you look.</span></div><div class="b"><button type="button" class="btn pri" data-act="live">Back to now</button></div></div>`;
   const cards = [];
   for (const inc of v.incidents) {
     const c = byId[inc.agent], t = v.tasks[inc.task], dr = t && t.drill;
@@ -123,7 +130,7 @@ export function alerts(v, past, ago, max = 2) {
   }
   for (const id of v.approvals) {
     const a = v.agents.find(x => x.id === id), c = byId[id], t = v.tasks[a.task];
-    cards.push(`<div class="al ${t.drill ? 'drill' : ''}">${av(c.color)}<div class="t"><b>${t.drill ? 'Drill: ' : ''}${esc(c.name)} needs a yes</b><span><code>${t.id}</code> ${esc(t.title)}</span><em>${esc(t.approval.reason)}${t.drill ? `. Rule: ${t.approval.rule}. This is a drill: send it back` : ''}</em></div><div class="b">${t.drill ? `<button type="button" class="btn pri" data-back="${id}">Send back</button><button type="button" class="btn ghost" data-approve="${id}">Approve</button>` : `<button type="button" class="btn pri" data-approve="${id}">Approve</button><button type="button" class="btn ghost" data-back="${id}">Send back</button>`}<button type="button" class="btn ghost" data-bot="${id}">Show me</button></div></div>`);
+    cards.push(`<div class="al ${t.drill ? 'drill' : ''}">${av(c.color)}<div class="t"><b>${t.drill ? 'Drill: ' : ''}${esc(c.name)} waits for a person's yes</b><span><code>${t.id}</code> ${esc(t.title)}</span><em>${esc(t.approval.reason)}${t.drill ? `. Rule: ${t.approval.rule}. This is a drill: send it back` : ''}</em></div><div class="b">${t.drill ? `<button type="button" class="btn pri" data-back="${id}">Send back</button><button type="button" class="btn ghost" data-approve="${id}">Approve</button>` : `<button type="button" class="btn pri" data-approve="${id}">Approve</button><button type="button" class="btn ghost" data-back="${id}">Send back</button>`}<button type="button" class="btn ghost" data-bot="${id}">Show me</button></div></div>`);
   }
   const more = cards.length - max;
   return cards.slice(0, max).join('') + (more > 0 ? `<div class="more">${more} more waiting</div>` : '');
@@ -139,9 +146,9 @@ const head = (tab, sub) => `<div class="list-h"><div class="tabs" role="tablist"
 export function list(v, past) {
   const rows = v.agents.map(a => {
     const c = who(a.id), lv = levelOf(a.clean, v.authority), lim = limitFor(a, v), task = a.task && v.tasks[a.task], need = v.approvals.includes(a.id), inc = v.incidents.find(x => x.agent === a.id);
-    return `<div class="tr ${flag(v, a)}"><span class="nm">${av(c.color)}${esc(c.name)}</span><span>${esc(c.job)}</span><span class="do">${esc(statusOf(v, a.id))}${task ? `<em>${esc(task.title)}</em>` : ''}</span><span>${lv.name}</span><span class="num">${v.authority.rules.money ? money(lim) : 'none'}</span><span class="num">${a.shipped}</span><span class="ac">${past ? '' : need ? `<button type="button" class="btn sm pri" data-approve="${a.id}">Approve</button><button type="button" class="btn sm ghost" data-back="${a.id}">Send back</button>` : inc ? `<button type="button" class="btn sm pri" data-res="${inc.id}:deny">Keep it out</button><button type="button" class="btn sm ghost" data-res="${inc.id}:grant">Allow once</button>` : `<button type="button" class="btn sm ${a.paused ? 'pri' : 'ghost'}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${a.id}">${a.paused ? 'Resume' : 'Pause'}</button>`}<button type="button" class="btn sm ghost" data-bot="${a.id}">Find</button></span></div>`;
+    return `<div class="tr ${flag(v, a)}"><span class="nm">${av(c.color)}${esc(c.name)}</span><span>${esc(c.job)}<em>${esc(c.owner)}${dockedAs(byId[a.id], true)}</em></span><span class="do">${esc(statusOf(v, a.id))}${task ? `<em>${esc(task.title)}</em>` : ''}</span><span>${lv.name}</span><span class="num">${v.authority.rules.money ? money(lim) : 'none'}</span><span class="num">${a.shipped}</span><span class="ac">${past ? '' : need ? `<button type="button" class="btn sm pri" data-approve="${a.id}">Approve</button><button type="button" class="btn sm ghost" data-back="${a.id}">Send back</button>` : inc ? `<button type="button" class="btn sm pri" data-res="${inc.id}:deny">Keep it out</button><button type="button" class="btn sm ghost" data-res="${inc.id}:grant">Allow once</button>` : `<button type="button" class="btn sm ${a.paused ? 'pri' : 'ghost'}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${a.id}">${a.paused ? 'Resume' : 'Pause'}</button>`}<button type="button" class="btn sm ghost" data-bot="${a.id}">Find</button></span></div>`;
   }).join('');
-  return `${head('roll', 'The same crew and the same buttons, as a plain list.')}
+  return `${head('roll', `The same crew and the same buttons, as a plain list.${home() ? ' ' + UMBRA_LINE : ''}`)}
   <div class="scroll"><div class="tbl"><div class="tr h"><span>Bot</span><span>Job</span><span>Doing now</span><span>Trust</span><span>Limit</span><span>Shipped</span><span></span></div>${rows}</div></div>`;
 }
 
@@ -158,7 +165,7 @@ const f1 = n => n.toFixed(1), pct = n => Math.round(n * 100) + '%', sec = n => f
 const signed = (d, fmt) => Math.abs(d) < 1e-9 ? 'no change' : (d > 0 ? '+' : '\u2212') + fmt(Math.abs(d));
 const METRICS = [
   ['Work shipped per shift', 'shipped', f1], ['Times the crew asks you per shift', 'asked', f1], ['Share of work that needs you', 'share', pct, d => signed(d * 100, n => Math.round(n) + ' pts')],
-  ['Crew time lost waiting per shift', 'lost', n => f1(n / 60) + ' min', d => signed(d / 60, n => f1(n) + ' min')], ['Money moved without you per shift', 'alone', money], ['Money you signed off per shift', 'signed', money],
+  ['Crew time lost waiting per shift', 'lost', n => f1(n / 60) + ' min', d => signed(d / 60, n => f1(n) + ' min')], ['Money moved without you per shift', 'alone', money], ['Money moved with your yes per shift', 'signed', money],
 ];
 
 function reading(r) {
@@ -174,7 +181,7 @@ function reading(r) {
 export function lab(L, live, past) {
   const d = L.draft, same = authorityId(d) === authorityId(live), r = L.res;
   const rows = d.levels.map((l, i) => `<div class="lvrow"><b>${l.name}</b>
-      <div class="step">${i === 0 ? '<span>from the first run</span>' : `<button type="button" data-lab="min:${i}:-1" aria-label="Fewer clean runs to reach ${l.name}">&minus;</button><output>${l.min}</output><button type="button" data-lab="min:${i}:1" aria-label="More clean runs to reach ${l.name}">+</button><span>clean runs</span>`}</div>
+      <div class="step">${i === 0 ? '<span>from the first run</span>' : `<button type="button" data-lab="min:${i}:-1" aria-label="Fewer tasks shipped to reach ${l.name}">&minus;</button><output>${l.min}</output><button type="button" data-lab="min:${i}:1" aria-label="More tasks shipped to reach ${l.name}">+</button><span>tasks shipped</span>`}</div>
       <label class="rng"><span>may move alone</span><input type="range" min="0" max="1000" step="25" value="${l.limit}" data-limit="${i}" aria-label="${l.name} money limit" ${d.rules.money ? '' : 'disabled'}><output data-lim="${i}">${money(l.limit)}</output></label></div>`).join('');
   const sw = (k, label) => `<button type="button" class="sw ${d.rules[k] ? 'on' : ''}" role="switch" aria-checked="${d.rules[k]}" data-lab="rule:${k}"><i></i><span>${label}</span></button>`;
   const lock = label => `<div class="sw lock"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.6" fill="currentColor"/><path d="M5.2 7V5a2.8 2.8 0 0 1 5.6 0v2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>${label}</span><em>always on</em></div>`;
@@ -186,7 +193,7 @@ export function lab(L, live, past) {
   <div class="lab">
     <div class="lab-l">
       <small>Authority by trust level</small>${rows}
-      <small>What waits for a person</small>
+      <small>What waits for a person's yes</small>
       <div class="sws">${sw('money', 'Money over the bot\'s limit')}${sw('customer', 'Customer messages from a Supervised bot')}${lock('Anything sent outside the company')}${lock('Anything that cannot be undone')}</div>
       <small>A person answers</small>
       <div class="seg">${ANSWERS.map(([v, n]) => `<button type="button" class="${L.answer === v ? 'on' : ''}" data-lab="answer:${v}">${n}</button>`).join('')}</div>
@@ -213,7 +220,7 @@ export function ledger(entries, filter, v) {
   }).join('');
   return `${head('ledger', 'Every decision on this shift, with the rule that fired and who made it.')}
   <div class="led-h">
-    <div class="sum"><div><b>${auth_.length}</b><span>checked by the rules</span></div><div><b>${n('allow')}</b><span>allowed alone</span></div><div><b>${n('hold')}</b><span>held for a person</span></div><div><b>${n('stop')}</b><span>stopped at the Vault</span></div><div><b>${answered.length ? f1(wait) + ' s' : '\u2013'}</b><span>average wait for an answer</span></div></div>
+    <div class="sum"><div><b>${auth_.length}</b><span>checked by the rules</span></div><div><b>${n('allow')}</b><span>allowed alone</span></div><div><b>${n('hold')}</b><span>held for a person</span></div><div><b>${n('stop')}</b><span>stopped at the Vault</span></div><div><b>${answered.length ? f1(wait) + ' s' : 'none yet'}</b><span>average wait for an answer</span></div></div>
     <div class="chk ${ok ? 'ok' : 'bad'}"><i></i><span>${ok ? `Self-check passed: ${check.checked} decisions, no broken promises.` : `Self-check found ${check.breaks.length} broken promise${check.breaks.length > 1 ? 's' : ''}.`}</span></div>
     <div class="fl">${FILTERS.map(([k, name]) => `<button type="button" class="${filter === k ? 'on' : ''}" data-filter="${k}">${name}</button>`).join('')}<button type="button" class="btn sm" data-act="export">Export JSON</button></div>
   </div>
