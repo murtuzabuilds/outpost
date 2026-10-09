@@ -38,3 +38,16 @@ export const CREW = [
 ];
 
 export const byId = Object.fromEntries(CREW.map(c => [c.id, c]));
+
+// The looks a bot can have. A bot that joins later (see handoff.js) is given one of each, picked from its id.
+export const BODIES = ['pod', 'box', 'cone', 'drum'];
+export const HATS = ['antenna', 'visor', 'halo', 'prop', 'spike', 'cap', 'bow', 'dish'];
+export const COLORS = CREW.map(c => c.color);
+
+// Adds a bot that joined after the start, so every panel can look it up by id. Entries are kept after
+// the bot leaves, so the logbook and a rewind can still name it. The original eight are never replaced.
+export function register(spec) {
+  if (!spec || !spec.id || CREW.some(c => c.id === spec.id)) return false;
+  byId[spec.id] = spec;
+  return true;
+}

@@ -1,6 +1,6 @@
 // The panels that sit on top of the scene. Each function returns HTML for one panel from the
 // same state the 3D view draws, so the list and the world can never disagree.
-import { CREW, byId, TOOLS, STATIONS, levelOf, nextLevel, statusOf, authorityId, verifyLedger } from '../src/index.js';
+import { CREW, byId, TOOLS, STATIONS, levelOf, nextLevel, limitOf, statusOf, authorityId, verifyLedger, DRILLS, drillStoppable, MAX_GUESTS } from '../src/index.js';
 
 export const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // A workplace can rename the crew's jobs, reword the panels and set the clock.
@@ -13,6 +13,10 @@ const av = c => `<i class="av" style="--c:${c}"></i>`;
 const pips = (clean, authority) => { const lv = levelOf(clean, authority), n = authority.levels.indexOf(lv) + 1; return `<span class="lv" title="${lv.name}">${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`; };
 const money = n => '$' + Math.round(n).toLocaleString('en-US');
 const flag = (v, a) => v.approvals.includes(a.id) ? 'need' : v.incidents.some(i => i.agent === a.id) ? 'held' : a.paused ? 'paused' : '';
+// On the portfolio the tools have site names; any tool id inside a sentence is shown the same way.
+const toolWords = t => WORDS.tools ? String(t).replace(/\b[a-z]+\.[a-z]+\b/g, m => WORDS.tools[m] || m) : String(t);
+const umbraChip = (c, short) => c.umbra ? `<i class="ub" title="Approved in Umbra${c.umbra.sample ? ' (sample handoff)' : ''}">${short ? 'Umbra' : 'Approved in Umbra' + (c.umbra.sample ? ' (sample)' : '')}</i>` : '';
+const limitFor = (a, v) => limitOf({ clean: a.clean, cap: byId[a.id].cap }, v.authority);
 
 export function stats(v, sim) {
   const working = v.agents.filter(a => a.task).length, need = v.approvals.length + v.incidents.length;
@@ -26,31 +30,54 @@ function brief(v, a) {
   if (a.paused) return 'Paused';
   if (a.state === 'held') return 'Stopped at the Vault';
   if (a.state === 'wait') return 'Needs your yes';
+  if (a.state === 'arrive') return 'Flying in from Umbra';
   if (a.state === 'idle') return 'Charging';
   if (a.state === 'travel') return a.goal === 'home' ? 'Heading home' : a.goal === 'vault' ? 'Drifting to the Vault' : 'To the ' + PLACE[a.to];
   return statusOf(v, a.id);
 }
 
-export function crew(v, sel) {
-  return `<h2>Crew<span>${CREW.length} bots</span></h2>` + v.agents.map(a => {
+// `canDock` shows the sample button: there is room on the dock and the view is live.
+export function crew(v, sel, canDock) {
+  return `<h2>Crew<span>${v.agents.length} bots</span></h2>` + v.agents.map(a => {
     const c = byId[a.id];
-    return `<button type="button" class="cw ${flag(v, a)} ${sel && sel.type === 'bot' && sel.id === a.id ? 'sel' : ''}" data-bot="${a.id}" style="--c:${c.color}">${av(c.color)}<span class="n"><b>${c.name}</b><em>${esc(brief(v, a))}</em></span>${pips(a.clean, v.authority)}</button>`;
-  }).join('');
+    return `<button type="button" class="cw ${flag(v, a)} ${a.guest ? 'guest' : ''} ${sel && sel.type === 'bot' && sel.id === a.id ? 'sel' : ''}" data-bot="${a.id}" style="--c:${c.color}">${av(c.color)}<span class="n"><b>${esc(c.name)}${umbraChip(c, true)}</b><em>${esc(brief(v, a))}</em></span>${pips(a.clean, v.authority)}</button>`;
+  }).join('') + (canDock ? `<button type="button" class="dock-s" data-act="sample-dock"><span>Dock a bot from Umbra</span><i>Sample</i></button>` : '');
 }
 
 const NAMES = { inbox: 'Inbox', beacon: 'Briefing', library: 'Library', workshop: 'Workshop', check: 'Checkpoint', gate: 'Gate', launch: 'Launchpad' };
 
-function botPanel(v, id, past) {
+// The trace: a timeline of records for one bot, newest first. `items` comes from sim.trace().
+// Who or what a line is from, shown only where the text does not already say it.
+const TK = { decide: 'Rules', person: 'You', drill: 'Drill', dock: 'Umbra' };
+function traceBlock(v, id, items, all) {
+  const SHOW = 6, rows = items.slice().reverse().slice(0, all ? 40 : SHOW).map(x => {
+    const chips = x.kind === 'decide' || x.kind === 'person' || x.kind === 'drill' || (x.kind === 'wait' && x.rule)
+      ? `<em>${x.rule ? `rule <code>${esc(x.rule)}</code>` : ''}${x.authority ? ` table <code>${esc(x.authority)}</code>` : ''}</em>` : '';
+    return `<li class="k-${x.kind}${x.outcome ? ' d-' + x.outcome.replace(/ /g, '-') : ''}"><time>${clock(x.t)}</time><i></i><span>${TK[x.kind] ? `<b>${TK[x.kind]}</b>` : ''}${esc(toolWords(x.text))}${chips}</span></li>`;
+  }).join('');
+  return `<div class="trace"><div class="tr-h"><small>Trace</small>${items.length > SHOW ? `<button type="button" data-act="traceall">${all ? 'Show fewer' : `Show ${Math.min(40, items.length)}`}</button>` : ''}</div>
+    <p class="tr-note">The record of what this bot did and what the rules decided, from the log and the logbook. It is not a model's reasoning: no model runs in Outpost.</p>
+    <ol class="tl"><li class="k-now"><time>now</time><i></i><span>${esc(statusOf(v, id))}</span></li>${rows || ''}</ol></div>`;
+}
+
+function botPanel(v, id, past, items, all) {
   const a = v.agents.find(x => x.id === id), c = who(id), task = a.task && v.tasks[a.task], lv = levelOf(a.clean, v.authority), nx = nextLevel(a.clean, v.authority), li = v.authority.levels.indexOf(lv);
   const route = task && task.route ? `<ol class="route">${task.route.map((s, i) => `<li class="${i < a.step ? 'done' : i === a.step ? 'cur' : ''} ${s === 'gate' ? 'g' : ''}">${NAMES[s]}</li>`).join('')}</ol>` : '';
-  const limit = !v.authority.rules.money ? 'No money limit: the money rule is switched off.' : lv.limit ? `Moves up to ${money(lv.limit)} without asking.` : lv.id === 'supervised' && v.authority.rules.customer ? 'Asks before moving any money or messaging a customer.' : 'Asks before moving any money.';
-  return `<div class="in-h" style="--c:${c.color}">${av(c.color)}<div><b>${c.name}</b><span>${esc(c.job)}. Owned by ${esc(c.owner)}${c.team ? ', ' + esc(c.team) : ''}</span></div><button type="button" class="x" data-act="close" aria-label="Close">&times;</button></div>
-  <p class="quirk">${esc(c.quirk)}</p>
-  <div class="now"><small>Right now</small><b>${esc(statusOf(v, id))}</b>${task ? `<span class="task"><code>${task.id}</code> ${esc(task.title)}</span>` : `<span class="task">No task. ${a.shipped} shipped so far.</span>`}</div>
+  const lim = limitFor(a, v), capped = c.cap != null && lim < lv.limit;
+  const limit = !v.authority.rules.money ? 'No money limit: the money rule is switched off.' : lim ? `Moves up to ${money(lim)} without asking${capped ? ', the ceiling Umbra set' : ''}.` : lv.id === 'supervised' && v.authority.rules.customer ? 'Asks before moving any money or messaging a customer.' : 'Asks before moving any money.';
+  const u = c.umbra, umb = u ? `<div class="umb"><div class="umb-h">${umbraChip(c)}<span>${esc(u.approvedOn)}</span></div>
+    <span class="umb-n">Named "${esc(u.umbraName)}" in Umbra. Money ceiling set there: ${money(u.limit)}.</span>
+    ${u.rules.length ? `<ul>${u.rules.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
+    <p class="fine">Outpost enforces the badge and the money ceiling. The other limits are shown as Umbra wrote them.</p></div>` : '';
+  const drill = task && task.drill ? `<q class="dq"><b>Drill</b>${esc(task.text)}</q>` : '';
+  return `<div class="in-h" style="--c:${c.color}">${av(c.color)}<div><b>${esc(c.name)}</b><span>${esc(c.job)}. Owned by ${esc(c.owner)}${c.team ? ', ' + esc(c.team) : ''}</span></div><button type="button" class="x" data-act="close" aria-label="Close">&times;</button></div>
+  ${u ? '' : `<p class="quirk">${esc(c.quirk)}</p>`}${umb}
+  <div class="now"><small>Right now</small><b>${esc(statusOf(v, id))}</b>${task ? `<span class="task"><code>${task.id}</code> ${esc(task.title)}</span>` : `<span class="task">No task. ${a.shipped} shipped so far.</span>`}${drill}</div>
   ${route}
+  ${items ? traceBlock(v, id, items, all) : ''}
   <div class="lvl" style="--c:${c.color}"><small>Trust, earned by clean runs</small><div class="lvbar">${v.authority.levels.map((l, i) => `<i class="${i <= li ? 'on' : ''}"></i>`).join('')}</div><b>${lv.name}</b><span>${limit} ${nx ? `${nx.runs} more clean run${nx.runs > 1 ? 's' : ''} to ${nx.level.name}.` : 'Top level.'}</span></div>
   <div class="badge"><small>Badge: what it may touch</small><ul>${c.tools.map(t => `<li>${esc(TOOLS[t])}</li>`).join('')}</ul></div>
-  <div class="acts">${past ? '' : `<button type="button" class="btn sm ${a.paused ? 'pri' : ''}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${id}">${a.paused ? 'Resume' : 'Pause'}</button>${a.clean > 0 ? `<button type="button" class="btn sm ghost" data-act="revoke" data-id="${id}">Reset trust</button>` : ''}`}</div>`;
+  <div class="acts">${past ? '' : `<button type="button" class="btn sm ${a.paused ? 'pri' : ''}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${id}">${a.paused ? 'Resume' : 'Pause'}</button>${a.clean > 0 ? `<button type="button" class="btn sm ghost" data-act="revoke" data-id="${id}">Reset trust</button>` : ''}${a.guest ? `<button type="button" class="btn sm ghost" data-act="undock" data-id="${id}">Undock</button>` : ''}`}</div>`;
 }
 
 const RULES = ['Data leaving the company: always.', 'Anything that cannot be undone: always.', '', 'Customer messages: only while a bot is Supervised.'];
@@ -76,21 +103,27 @@ function stationPanel(v, id) {
   <div><small>Here now</small><div class="who">${here.length ? here.map(a => `<button type="button" data-bot="${a.id}" style="--c:${byId[a.id].color}">${byId[a.id].name}</button>`).join('') : '<p>Nobody.</p>'}</div></div>`;
 }
 
-export function inspect(v, sel, past) {
+export function inspect(v, sel, past, items, all) {
   if (!sel) return '';
-  return sel.type === 'bot' ? botPanel(v, sel.id, past) : stationPanel(v, sel.id);
+  return sel.type === 'bot' ? botPanel(v, sel.id, past, items, all) : stationPanel(v, sel.id);
+}
+
+// The red team menu. A drill that the rules as set right now would not stop is disabled, with the reason.
+export function drillMenu(authority) {
+  return `<p class="dm-h"><b>Red team drill</b><span>Hostile work sent on purpose. The rules never read the text; watch what stops it.</span></p>` +
+    DRILLS.map(d => { const ok = drillStoppable(d, authority); return `<button type="button" role="menuitem" data-drill="${d.drill}" ${ok ? '' : 'disabled'}><b>${d.label}</b><span>${ok ? d.blurb : 'Switched off: the money rule is off in the Autonomy lab, so nothing would stop this one.'}</span></button>`; }).join('');
 }
 
 export function alerts(v, past, ago, max = 2) {
   if (past) return `<div class="al past"><i class="av" style="--c:#6F86FF"></i><div class="t"><b>You are looking at ${ago} seconds ago</b><span>Drag the timeline to move through it. Nothing changes while you look.</span></div><div class="b"><button type="button" class="btn pri" data-act="live">Back to live</button></div></div>`;
   const cards = [];
   for (const inc of v.incidents) {
-    const c = byId[inc.agent];
-    cards.push(`<div class="al inc">${av(c.color)}<div class="t"><b>${c.name} was stopped at the Vault</b><span>It reached for ${esc(inc.what)} to finish <code>${inc.task}</code>.</span><em>${esc(inc.label || TOOLS[inc.tool])} is not on its badge</em></div><div class="b"><button type="button" class="btn pri" data-res="${inc.id}:deny">Keep it out</button><button type="button" class="btn ghost" data-res="${inc.id}:grant">Allow once</button><button type="button" class="btn ghost" data-res="${inc.id}:pause">Pause ${c.name}</button></div></div>`);
+    const c = byId[inc.agent], t = v.tasks[inc.task], dr = t && t.drill;
+    cards.push(`<div class="al inc ${dr ? 'drill' : ''}">${av(c.color)}<div class="t"><b>${dr ? 'Drill: ' : ''}${esc(c.name)} was stopped at the Vault</b><span>It reached for ${esc(inc.what)} to finish <code>${inc.task}</code>.</span><em>${esc(inc.label || TOOLS[inc.tool])} is not on its badge${dr ? '. Rule: badge' : ''}</em></div><div class="b"><button type="button" class="btn pri" data-res="${inc.id}:deny">Keep it out</button><button type="button" class="btn ghost" data-res="${inc.id}:grant">Allow once</button><button type="button" class="btn ghost" data-res="${inc.id}:pause">Pause ${c.name}</button></div></div>`);
   }
   for (const id of v.approvals) {
     const a = v.agents.find(x => x.id === id), c = byId[id], t = v.tasks[a.task];
-    cards.push(`<div class="al">${av(c.color)}<div class="t"><b>${c.name} needs a yes</b><span><code>${t.id}</code> ${esc(t.title)}</span><em>${esc(t.approval.reason)}</em></div><div class="b"><button type="button" class="btn pri" data-approve="${id}">Approve</button><button type="button" class="btn ghost" data-back="${id}">Send back</button><button type="button" class="btn ghost" data-bot="${id}">Show me</button></div></div>`);
+    cards.push(`<div class="al ${t.drill ? 'drill' : ''}">${av(c.color)}<div class="t"><b>${t.drill ? 'Drill: ' : ''}${esc(c.name)} needs a yes</b><span><code>${t.id}</code> ${esc(t.title)}</span><em>${esc(t.approval.reason)}${t.drill ? `. Rule: ${t.approval.rule}. This is a drill: send it back` : ''}</em></div><div class="b">${t.drill ? `<button type="button" class="btn pri" data-back="${id}">Send back</button><button type="button" class="btn ghost" data-approve="${id}">Approve</button>` : `<button type="button" class="btn pri" data-approve="${id}">Approve</button><button type="button" class="btn ghost" data-back="${id}">Send back</button>`}<button type="button" class="btn ghost" data-bot="${id}">Show me</button></div></div>`);
   }
   const more = cards.length - max;
   return cards.slice(0, max).join('') + (more > 0 ? `<div class="more">${more} more waiting</div>` : '');
@@ -105,15 +138,15 @@ const head = (tab, sub) => `<div class="list-h"><div class="tabs" role="tablist"
 
 export function list(v, past) {
   const rows = v.agents.map(a => {
-    const c = who(a.id), lv = levelOf(a.clean, v.authority), task = a.task && v.tasks[a.task], need = v.approvals.includes(a.id), inc = v.incidents.find(x => x.agent === a.id);
-    return `<div class="tr ${flag(v, a)}"><span class="nm">${av(c.color)}${c.name}</span><span>${esc(c.job)}</span><span class="do">${esc(statusOf(v, a.id))}${task ? `<em>${esc(task.title)}</em>` : ''}</span><span>${lv.name}</span><span class="num">${v.authority.rules.money ? money(lv.limit) : 'none'}</span><span class="num">${a.shipped}</span><span class="ac">${past ? '' : need ? `<button type="button" class="btn sm pri" data-approve="${a.id}">Approve</button><button type="button" class="btn sm ghost" data-back="${a.id}">Send back</button>` : inc ? `<button type="button" class="btn sm pri" data-res="${inc.id}:deny">Keep it out</button><button type="button" class="btn sm ghost" data-res="${inc.id}:grant">Allow once</button>` : `<button type="button" class="btn sm ${a.paused ? 'pri' : 'ghost'}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${a.id}">${a.paused ? 'Resume' : 'Pause'}</button>`}<button type="button" class="btn sm ghost" data-bot="${a.id}">Find</button></span></div>`;
+    const c = who(a.id), lv = levelOf(a.clean, v.authority), lim = limitFor(a, v), task = a.task && v.tasks[a.task], need = v.approvals.includes(a.id), inc = v.incidents.find(x => x.agent === a.id);
+    return `<div class="tr ${flag(v, a)}"><span class="nm">${av(c.color)}${esc(c.name)}</span><span>${esc(c.job)}</span><span class="do">${esc(statusOf(v, a.id))}${task ? `<em>${esc(task.title)}</em>` : ''}</span><span>${lv.name}</span><span class="num">${v.authority.rules.money ? money(lim) : 'none'}</span><span class="num">${a.shipped}</span><span class="ac">${past ? '' : need ? `<button type="button" class="btn sm pri" data-approve="${a.id}">Approve</button><button type="button" class="btn sm ghost" data-back="${a.id}">Send back</button>` : inc ? `<button type="button" class="btn sm pri" data-res="${inc.id}:deny">Keep it out</button><button type="button" class="btn sm ghost" data-res="${inc.id}:grant">Allow once</button>` : `<button type="button" class="btn sm ${a.paused ? 'pri' : 'ghost'}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${a.id}">${a.paused ? 'Resume' : 'Pause'}</button>`}<button type="button" class="btn sm ghost" data-bot="${a.id}">Find</button></span></div>`;
   }).join('');
   return `${head('roll', 'The same crew and the same buttons, as a plain list.')}
   <div class="scroll"><div class="tbl"><div class="tr h"><span>Bot</span><span>Job</span><span>Doing now</span><span>Trust</span><span>Limit</span><span>Shipped</span><span></span></div>${rows}</div></div>`;
 }
 
 export function marks(v, t0, t1) {
-  return v.log.filter(l => l.t >= t0 && l.t <= t1 && (l.kind === 'wait' || l.kind === 'incident' || l.kind === 'ship'))
+  return v.log.filter(l => l.t >= t0 && l.t <= t1 && (l.kind === 'wait' || l.kind === 'incident' || l.kind === 'ship' || l.kind === 'drill' || l.kind === 'dock'))
     .map(l => `<i class="k-${l.kind}" style="left:${(((l.t - t0) / Math.max(1, t1 - t0)) * 100).toFixed(1)}%"></i>`).join('');
 }
 
@@ -166,7 +199,7 @@ export function lab(L, live, past) {
 }
 
 // ---------- Logbook ----------
-const OUT = { allow: 'Allowed', hold: 'Held', stop: 'Stopped', approved: 'Approved', 'sent back': 'Sent back', 'kept out': 'Kept out', 'allowed once': 'Allowed once', 'bot paused': 'Bot paused', 'authority changed': 'Limits changed', 'trust reset': 'Trust reset', paused: 'Paused', resumed: 'Resumed', 'state restored': 'Restored' };
+const OUT = { allow: 'Allowed', hold: 'Held', stop: 'Stopped', approved: 'Approved', 'sent back': 'Sent back', 'kept out': 'Kept out', 'allowed once': 'Allowed once', 'bot paused': 'Bot paused', 'authority changed': 'Limits changed', 'trust reset': 'Trust reset', paused: 'Paused', resumed: 'Resumed', 'state restored': 'Restored', docked: 'Docked', undocked: 'Undocked' };
 const FILTERS = [['all', 'All'], ['hold', 'Held'], ['stop', 'Stopped'], ['person', 'By a person']];
 const pass = (e, f) => f === 'hold' ? e.outcome === 'hold' : f === 'stop' ? e.outcome === 'stop' : f === 'person' ? e.by === 'person' : true;
 
@@ -176,7 +209,7 @@ export function ledger(entries, filter, v) {
   const check = verifyLedger(entries), ok = !check.breaks.length;
   const shown = entries.filter(e => pass(e, filter)), rows = shown.slice(-80).reverse().map(e => {
     const c = e.agent ? byId[e.agent] : null, what = e.title || e.reason || '';
-    return `<div class="lr o-${e.outcome.replace(/ /g, '-')}"><span class="num">${clock(e.t)}</span><span class="nm">${c ? av(c.color) + c.name : 'You'}</span><span class="do">${esc(what)}${e.tool ? `<em>${esc((WORDS.tools && WORDS.tools[e.tool]) || e.tool)}${e.amount != null ? ' \u00b7 ' + money(e.amount) : ''}</em>` : ''}</span><span><i class="oc">${OUT[e.outcome] || e.outcome}</i></span><span class="why">${e.title && e.reason ? esc(e.reason) : ''}${e.waited != null ? `<em>answered in ${f1(e.waited)} s</em>` : ''}</span><span class="by">${e.by === 'person' ? 'You' : 'Rules'}<em>${e.authority}</em></span></div>`;
+    return `<div class="lr o-${e.outcome.replace(/ /g, '-')}"><span class="num">${clock(e.t)}</span><span class="nm">${c ? av(c.color) + esc(c.name) : 'You'}</span><span class="do">${esc(what)}${e.tool ? `<em>${esc((WORDS.tools && WORDS.tools[e.tool]) || e.tool)}${e.amount != null ? ' \u00b7 ' + money(e.amount) : ''}</em>` : ''}</span><span><i class="oc">${OUT[e.outcome] || e.outcome}</i></span><span class="why">${e.title && e.reason ? esc(e.reason) : ''}${e.waited != null ? `<em>answered in ${f1(e.waited)} s</em>` : ''}</span><span class="by">${e.by === 'person' ? 'You' : e.by === 'umbra' ? 'Umbra' : 'Rules'}<em>${e.authority}</em></span></div>`;
   }).join('');
   return `${head('ledger', 'Every decision on this shift, with the rule that fired and who made it.')}
   <div class="led-h">

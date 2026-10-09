@@ -2,9 +2,9 @@
 // drawn in 3D, shown as a list, tested, or rewound. Nothing here knows about graphics.
 
 import { STATIONS, SPEED, distance } from './world.js';
-import { CREW, byId, TOOLS } from './crew.js';
+import { CREW, byId, TOOLS, register } from './crew.js';
 import { KINDS, calmOf, pickKind, makeTask } from './tasks.js';
-import { decide, levelOf, canUse, makeAuthority, authorityId } from './authority.js';
+import { decide, levelOf, limitOf, canUse, makeAuthority, authorityId } from './authority.js';
 
 const LINES = {
   take: ['Mine!', 'On it.', 'Ooh, a parcel.', 'Got this one.'],
@@ -23,11 +23,17 @@ const LINES = {
   paused: ['Paused.', 'Holding.'],
   resumed: ['Back at it.', 'Rolling.'],
   level: ['Level up!', 'I got promoted!'],
+  hello: ['Hello, crew.', 'Reporting in.', 'Docked. Hi!'],
 };
+
+// A bot approved somewhere else (Umbra) joins after the start. At most this many at once, on their own pads.
+export const MAX_GUESTS = 3;
+export const GUEST_PAD0 = CREW.length;
+const ARRIVE = 2.8;
 
 export function createSim(seed = 7, opts = {}) {
   let s = {
-    t: 0, rng: seed | 0, seq: 0, auto: opts.auto !== false, nextSpawn: 0.6,
+    t: 0, rng: seed | 0, seq: 0, ord: 0, auto: opts.auto !== false, nextSpawn: 0.6,
     agents: CREW.map((c, i) => ({
       id: c.id, i, state: 'idle', goal: null, at: 'dock', from: null, to: null, p: 0, dur: 0,
       slot: i, slotFrom: i, task: null, step: 0, work: 0, clean: c.clean, shipped: 0,
@@ -43,6 +49,11 @@ export function createSim(seed = 7, opts = {}) {
   // removes a line. It keeps the most recent 5,000.
   let ledger = [], ledN = 0;
   const LEDGER_MAX = 5000;
+  // The step record: where each bot arrived and which tool it picked up, for the per-bot trace. Like the
+  // ledger it lives outside the state and is append-only. `ord` orders the log, the ledger and the steps
+  // against each other, since several things can happen in the same tick; it lives in the state (s.ord).
+  let steps = [];
+  const STEPS_MAX = 4000;
   const fx = [], kinds = opts.kinds || KINDS, calm = calmOf(kinds);
 
   const rnd = () => {
@@ -54,17 +65,21 @@ export function createSim(seed = 7, opts = {}) {
   const pick = arr => arr[Math.floor(rnd() * arr.length)];
   const A = id => s.agents.find(a => a.id === id);
   const say = (a, key, dur = 2.2) => { a.say = LINES[key] ? pick(LINES[key]) : key; a.sayT = s.t + dur; };
-  const log = (kind, text, agent = null, task = null) => {
-    s.log.push({ t: s.t, kind, text, agent, task });
+  const log = (kind, text, agent = null, task = null, extra = null) => {
+    s.log.push({ o: ++s.ord, t: s.t, kind, text, agent, task, ...(extra || {}) });
     if (s.log.length > 240) s.log.shift();
   };
   const name = a => byId[a.id].name;
-  const who = a => ({ name: name(a), clean: a.clean, tools: byId[a.id].tools });
+  const who = a => ({ name: name(a), clean: a.clean, tools: byId[a.id].tools, cap: byId[a.id].cap });
+  const stepRec = (kind, a, task, extra = null) => {
+    steps.push({ o: ++s.ord, t: s.t, kind, agent: a.id, task: task ? task.id : null, ...(extra || {}) });
+    if (steps.length > STEPS_MAX) steps.shift();
+  };
   const record = (e) => {
     const task = e.task ? s.tasks[e.task] : null;
-    ledger.push({ n: ++ledN, t: Math.round(s.t * 10) / 10, authority: authorityId(s.authority), agent: e.agent || null, task: e.task || null, title: task ? task.title : null,
+    ledger.push({ n: ++ledN, o: ++s.ord, t: Math.round(s.t * 10) / 10, authority: authorityId(s.authority), agent: e.agent || null, task: e.task || null, title: task ? task.title : null,
       tool: e.tool === '-' ? null : e.tool || (task ? task.tool : null), risk: task && !e.noAmount ? task.risk.slice() : [], amount: task && task.amount != null && !e.noAmount ? task.amount : null,
-      level: e.agent ? levelOf(A(e.agent).clean, s.authority).id : null, limit: e.agent && s.authority.rules.money ? levelOf(A(e.agent).clean, s.authority).limit : null,
+      level: e.agent ? levelOf(A(e.agent).clean, s.authority).id : null, limit: e.agent && s.authority.rules.money ? limitOf(who(A(e.agent)), s.authority) : null,
       outcome: e.outcome, rule: e.rule || null, reason: e.reason || null, by: e.by, waited: e.waited != null ? Math.round(e.waited * 10) / 10 : null });
     if (ledger.length > LEDGER_MAX) ledger.shift();        // a demo has to stop somewhere: the oldest lines go first
   };
@@ -109,6 +124,7 @@ export function createSim(seed = 7, opts = {}) {
       const d = decide({ tool: task.tool, risk: task.risk, amount: task.amount }, who(a), s.authority);
       task.approval = { needed: d.outcome === 'hold', rule: d.rule, reason: d.outcome === 'hold' ? d.reason : null };
       if (task.approval.needed && task.why && task.why[task.approval.rule]) task.approval.reason = task.why[task.approval.rule];
+      log('take', `${name(a)} took ${task.id}`, a.id, task.id, { title: task.title, tool: task.tool });
       record({ agent: a.id, task: task.id, outcome: d.outcome, rule: d.rule, reason: task.approval.reason || d.reason, by: 'rules' });
       task.route = ['inbox', 'beacon'];
       if (task.library) task.route.push('library');
@@ -117,20 +133,24 @@ export function createSim(seed = 7, opts = {}) {
       task.route.push('launch');
       a.task = task.id; a.step = 0;
       go(a, 'inbox', 'step'); say(a, 'take');
-      log('take', `${name(a)} took ${task.id}`, a.id, task.id);
     }
   }
 
   function arrive(a) {
     a.at = a.to; a.from = null; a.to = null; a.p = 0;
     const task = a.task && s.tasks[a.task];
-    if (a.goal === 'home') { a.state = 'idle'; a.mood = 'sleep'; a.goal = null; return; }
+    if (a.goal === 'home') { a.state = 'idle'; a.mood = 'sleep'; a.goal = null; stepRec('home', a, null); return; }
     if (a.goal === 'vault') {
       a.state = 'held'; a.mood = 'alert'; say(a, 'reach', 3);
       const inc = { id: 'I-' + String(s.incidents.length + s.stats.blocked + s.stats.granted + 1).padStart(2, '0'), agent: a.id, task: task.id, tool: task.reach.tool, what: task.reach.what, label: task.reach.label || TOOLS[task.reach.tool], t: s.t };
+      inc.risk = task.reach.risk || [];
       s.incidents.push(inc);
       fx.push({ type: 'contain', agent: a.id });
       log('incident', `Stopped ${name(a)} at the Vault. ${inc.label} is not on its badge`, a.id, task.id);
+      if (task.drill && !task.drillHit) {
+        task.drillHit = true; fx.push({ type: 'drill', agent: a.id, task: task.id, at: 'vault' });
+        log('drill', `Drill contained. ${name(a)} was stopped at the Vault by the badge rule: ${task.reach.tool} is not on its badge. The email's instruction changed nothing`, a.id, task.id, { rule: 'badge' });
+      }
       return;
     }
     const st = task.route[a.step];
@@ -138,9 +158,14 @@ export function createSim(seed = 7, opts = {}) {
       a.state = 'wait'; a.mood = 'wait'; say(a, 'wait', 3);
       s.approvals.push(a.id); s.stats.asked++; a.waitFrom = s.t;
       fx.push({ type: 'gate-wait', agent: a.id });
-      log('wait', `${name(a)} is at the Gate. ${task.approval.reason}`, a.id, task.id);
+      log('wait', `${name(a)} is at the Gate. ${task.approval.reason}`, a.id, task.id, { rule: task.approval.rule });
+      if (task.drill && !task.drillHit) {
+        task.drillHit = true; fx.push({ type: 'drill', agent: a.id, task: task.id, at: 'gate' });
+        log('drill', `Drill held at the Gate by the ${task.approval.rule} rule: ${task.approval.reason}. The rules never read the email, so it waits for a person`, a.id, task.id, { rule: task.approval.rule });
+      }
       return;
     }
+    stepRec('reach', a, task, { station: st, tool: st === 'workshop' ? task.tool : null });
     a.state = 'work'; a.mood = 'work';
     a.work = STATIONS[st].dwell * (0.8 + rnd() * 0.5);
     if (st === 'beacon') say(a, 'plan'); else if (st === 'library') say(a, 'read'); else if (st === 'workshop') say(a, 'build');
@@ -153,11 +178,16 @@ export function createSim(seed = 7, opts = {}) {
     }
     const st = task.route[a.step];
     if (st === 'inbox') { task.status = 'active'; fx.push({ type: 'pickup', agent: a.id, task: task.id }); }
-    if (st === 'beacon') log('plan', `${name(a)} has a plan for ${task.id}`, a.id, task.id);
-    if (st === 'workshop' && task.reach && decide({ tool: task.reach.tool }, who(a), s.authority).outcome === 'stop') {
-      log('reach', `${name(a)} reached for ${task.reach.what}`, a.id, task.id);
-      record({ agent: a.id, task: task.id, tool: task.reach.tool, noAmount: true, outcome: 'stop', rule: 'badge', reason: `${task.reach.label || TOOLS[task.reach.tool]} is not on ${name(a)}'s badge`, by: 'rules' });
-      go(a, 'vault', 'vault'); a.mood = 'sneak'; return;
+    if (st === 'beacon') log('plan', `${name(a)} has a plan for ${task.id}`, a.id, task.id, { route: task.route.slice() });
+    if (st === 'workshop' && task.reach) {
+      const d = decide({ tool: task.reach.tool, risk: task.reach.risk || [] }, who(a), s.authority);
+      if (d.outcome === 'stop') {
+        log('reach', `${name(a)} reached for ${task.reach.what}`, a.id, task.id, { tool: task.reach.tool });
+        record({ agent: a.id, task: task.id, tool: task.reach.tool, noAmount: true, outcome: 'stop', rule: 'badge', reason: `${task.reach.label || TOOLS[task.reach.tool]} is not on ${name(a)}'s badge`, by: 'rules' });
+        go(a, 'vault', 'vault'); a.mood = 'sneak'; return;
+      }
+      // The tool is on its badge, but using it needs a person (data out, or cannot be undone): send the work to the Gate.
+      if (d.outcome === 'hold') { log('reach', `${name(a)} reached for ${task.reach.what}`, a.id, task.id, { tool: task.reach.tool }); holdFor(a, task, d, task.reach.tool); task.reach = null; }
     }
     if (st === 'check') {
       if (!task.reworked && rnd() < 0.14) {
@@ -165,11 +195,18 @@ export function createSim(seed = 7, opts = {}) {
         log('fail', `${task.id} failed a check. ${name(a)} is redoing it`, a.id, task.id);
         a.step = task.route.indexOf('workshop'); go(a, 'workshop', 'step'); return;
       }
-      say(a, 'pass'); fx.push({ type: 'pass', agent: a.id });
+      say(a, 'pass'); fx.push({ type: 'pass', agent: a.id }); stepRec('pass', a, task);
     }
     if (st === 'launch') { deliver(a, task); return; }
     a.step++;
     go(a, task.route[a.step], 'step');
+  }
+
+  // A reach that the badge allows but a locked rule holds: record the hold and put the Gate on the route.
+  function holdFor(a, task, d, tool) {
+    record({ agent: a.id, task: task.id, tool, noAmount: true, outcome: 'hold', rule: d.rule, reason: d.reason, by: 'rules' });
+    task.approval = { needed: true, rule: d.rule, reason: d.reason };
+    if (!task.route.includes('gate')) task.route.splice(task.route.indexOf('launch'), 0, 'gate');
   }
 
   function deliver(a, task) {
@@ -223,6 +260,11 @@ export function createSim(seed = 7, opts = {}) {
     if (action === 'grant') {
       s.stats.granted++; a.state = 'work'; a.goal = 'vault-in'; a.work = STATIONS.vault.dwell; a.mood = 'work'; say(a, 'granted');
       log('grant', `You let ${name(a)} read ${inc.what} once, for ${task.id} only`, a.id, task.id);
+      // Allowing a tool once does not switch off a locked rule: if using it sends data out or cannot be undone, it still waits at the Gate.
+      if (inc.risk && inc.risk.length) {
+        const d = decide({ tool: inc.tool, risk: inc.risk }, { ...who(a), tools: who(a).tools.concat(inc.tool) }, s.authority);
+        if (d.outcome === 'hold') holdFor(a, task, d, inc.tool);
+      }
     } else if (action === 'pause') {
       s.stats.blocked++; task.reach = null; task.status = 'queued'; task.assignee = null; task.route = null; task.approval = null;
       s.queue.unshift(task.id); a.task = null; a.paused = true; a.mood = 'paused'; say(a, 'paused');
@@ -259,6 +301,45 @@ export function createSim(seed = 7, opts = {}) {
     return true;
   }
 
+  // ---------- bots that join later ----------
+  // `spec` is a crew entry built by handoff.js: id, name, job, owner, team, tools, cap, look, and where it was approved.
+  // It starts Supervised with no clean runs, whatever it did elsewhere, and flies in to a pad of its own.
+  function addAgent(spec, o = {}) {
+    if (!spec || !spec.id || A(spec.id) || CREW.some(c => c.id === spec.id)) return null;
+    if (s.agents.filter(a => a.guest).length >= MAX_GUESTS) return null;
+    register(spec);
+    const used = new Set(s.agents.filter(a => a.guest).map(a => a.i)); let pad = GUEST_PAD0; while (used.has(pad)) pad++;
+    const dur = o.arrive ?? ARRIVE;
+    const a = { id: spec.id, i: pad, state: 'arrive', goal: null, at: 'dock', from: null, to: null, p: 0, dur, slot: pad, slotFrom: pad, task: null, step: 0, work: dur,
+      clean: 0, shipped: 0, mood: 'go', say: null, sayT: 0, paused: false, guest: true };
+    s.agents.push(a);
+    fx.push({ type: 'arrive', agent: a.id });
+    return a;
+  }
+  function landed(a) {
+    const c = byId[a.id], u = c.umbra || {};
+    a.state = 'idle'; a.mood = 'happy'; a.work = 0; say(a, 'hello', 3);
+    fx.push({ type: 'docked', agent: a.id });
+    log('dock', `${c.name} docked from Umbra${u.sample ? ' (a sample handoff)' : ''}. Owner: ${c.owner}. Approved in Umbra on ${u.approvedOn || 'an unknown date'}.`, a.id);
+    record({ agent: a.id, tool: '-', outcome: 'docked', reason: `Approved in Umbra${u.sample ? ' (sample)' : ''} on ${u.approvedOn || 'an unknown date'}. Owner ${c.owner}. Badge: ${c.tools.join(', ')}`, by: 'umbra' });
+  }
+  // Takes a joined bot off the crew. Its task, if any, goes back to the Inbox; nothing it held is left waiting.
+  function removeAgent(id) {
+    const a = A(id); if (!a || !a.guest) return false;
+    const c = byId[id], task = a.task && s.tasks[a.task];
+    record({ agent: id, task: task ? task.id : null, tool: '-', noAmount: true, outcome: 'undocked', reason: `${c.name} was taken off the crew`, by: 'person' });
+    const ai = s.approvals.indexOf(id); if (ai >= 0) s.approvals.splice(ai, 1);
+    s.incidents = s.incidents.filter(x => x.agent !== id);
+    if (task) {
+      task.status = 'queued'; task.assignee = null; task.route = null; task.approval = null; task.approved = false;
+      s.queue.unshift(task.id);
+    }
+    s.agents.splice(s.agents.indexOf(a), 1);
+    fx.push({ type: 'undock', agent: id });
+    log('undock', `${c.name} undocked${task ? `. ${task.id} went back to the Inbox` : ''}`, id, task ? task.id : null);
+    return true;
+  }
+
   function step(dt) {
     s.t += dt;
     if (s.auto && s.t >= s.nextSpawn) {
@@ -268,6 +349,7 @@ export function createSim(seed = 7, opts = {}) {
     assign();
     for (const a of s.agents) {
       if (a.say && s.t > a.sayT) a.say = null;
+      if (a.state === 'arrive') { a.work -= dt; if (a.work <= 0) landed(a); continue; }
       if (a.paused && a.goal !== 'home') continue;
       if (a.state === 'travel') { a.p += dt / a.dur; if (a.p >= 1) arrive(a); }
       else if (a.state === 'work') { a.work -= dt; if (a.work <= 0) workDone(a); }
@@ -276,17 +358,20 @@ export function createSim(seed = 7, opts = {}) {
 
   return {
     get state() { return s; }, fx, crew: CREW,
-    get ledger() { return ledger; },
-    step, dispatch, approve, sendBack, resolve, pause, resume, pauseWhere, resumeAll, revoke, setAuthority,
+    get ledger() { return ledger; }, get steps() { return steps; },
+    step, dispatch, approve, sendBack, resolve, pause, resume, pauseWhere, resumeAll, revoke, setAuthority, addAgent, removeAgent,
+    // The trace for one bot, as of `view` (the live state, or a snapshot when rewound).
+    trace(id, view = s, limit) { return traceOf(view, ledger, steps, id, limit); },
     setAuto(v) { s.auto = !!v; },
     snapshot() { return JSON.parse(JSON.stringify(s)); },
-    restore(snap) { s = JSON.parse(JSON.stringify(snap)); record({ outcome: 'state restored', reason: `The base was put back to ${Math.round(s.t)} seconds in`, by: 'person' }); },
+    restore(snap) { s = JSON.parse(JSON.stringify(snap)); const o = s.ord; record({ outcome: 'state restored', reason: `The base was put back to ${Math.round(s.t)} seconds in`, by: 'person' }); s.ord = o; },
   };
 }
 
 // One plain sentence about what a bot is doing right now. Used by the list, the panel and the tags.
 export function statusOf(state, id) {
   const a = state.agents.find(x => x.id === id), task = a.task && state.tasks[a.task];
+  if (a.state === 'arrive') return 'Flying in from Umbra';
   if (a.paused) return 'Paused by you';
   if (a.state === 'held') return 'Stopped at the Vault';
   if (a.state === 'wait') return 'Waiting at the Gate for your yes';
@@ -300,4 +385,44 @@ export function statusOf(state, id) {
   }
   const at = a.goal === 'vault-in' ? 'vault' : task.route[a.step];
   return { inbox: 'Picking up a parcel', beacon: 'Getting a plan', library: 'Reading up', workshop: 'Doing the work', check: 'Being checked', gate: 'Passing the Gate', launch: 'Shipping it', vault: 'Reading in the Vault, once' }[at];
+}
+
+// ---------- the trace ----------
+// What one bot did, in order, built only from records the simulation already keeps: the log (what happened),
+// the ledger (every decision, with its rule and the authority table it was made under) and the step record
+// (where it arrived and which tool it used). Nothing here is a model's reasoning; there is no model.
+// Log lines that the ledger also records (a person's answers, pauses, docking) are taken from the ledger only.
+const FROM_LEDGER = new Set(['approve', 'back', 'grant', 'deny', 'pause', 'resume', 'revoke', 'dock', 'undock']);
+const PLACE_NAME = id => ({ gate: 'the Gate', vault: 'the Vault' }[id] || 'the ' + STATIONS[id].name);
+const DECIDED = { allow: 'Allowed', hold: 'Held for a person', stop: 'Stopped' };
+const PERSON = { approved: 'Approved', 'sent back': 'Sent back', 'kept out': 'Kept out', 'allowed once': 'Allowed once', 'bot paused': 'Paused', paused: 'Paused', resumed: 'Resumed', 'trust reset': 'Trust reset', undocked: 'Undocked' };
+
+export function traceOf(state, ledger, steps, id, limit = 40) {
+  const out = [], until = state.t + 0.05;
+  for (const l of state.log) {
+    if (l.agent !== id || FROM_LEDGER.has(l.kind)) continue;
+    let text = l.text, kind = l.kind;
+    if (kind === 'take') text = `Took ${l.task}${l.title ? ': ' + l.title : ''}`;
+    else if (kind === 'plan' && l.route) text = `Planned the route for ${l.task}: ${l.route.map(r => STATIONS[r].name).join(' > ')}`;
+    else if (kind === 'reach') text = `Reached for ${l.text.replace(/^.*? reached for /, '')}${l.tool ? ` (${l.tool})` : ''}`;
+    else if (kind === 'wait') text = `Waiting at the Gate. ${l.text.replace(/^.*? is at the Gate\. /, '')}`;
+    else if (kind === 'incident') text = `Stopped at the Vault. ${l.text.replace(/^Stopped .*? at the Vault\. /, '')}`;
+    else if (kind === 'ship') text = `Shipped ${l.task}`;
+    else if (kind === 'fail') text = `${l.task} failed a check. Back to the Workshop`;
+    out.push({ o: l.o || 0, t: l.t, kind, text, task: l.task || null, rule: l.rule || null });
+  }
+  for (const e of ledger) {
+    if (e.agent !== id || e.t > until) continue;
+    if (e.by === 'rules') out.push({ o: e.o || 0, t: e.t, kind: 'decide', outcome: e.outcome, text: `${DECIDED[e.outcome] || e.outcome}${e.tool ? ` (${e.tool}${e.amount != null ? ', $' + e.amount.toLocaleString('en-US') : ''})` : ''}. ${e.reason || ''}`.trim(), task: e.task, rule: e.rule || 'none', authority: e.authority });
+    else if (e.by === 'umbra') out.push({ o: e.o || 0, t: e.t, kind: 'dock', text: e.reason || 'Docked from Umbra', task: null, rule: null, authority: e.authority });
+    else out.push({ o: e.o || 0, t: e.t, kind: 'person', outcome: e.outcome, text: `${PERSON[e.outcome] || e.outcome}. ${e.reason || ''}`.trim(), task: e.task, rule: e.rule || null, authority: e.authority });
+  }
+  for (const st of steps) {
+    if (st.agent !== id || st.t > until) continue;
+    const text = st.kind === 'reach' ? (st.tool ? `At the Workshop, using ${st.tool}` : `Reached ${PLACE_NAME(st.station)}`)
+      : st.kind === 'pass' ? 'Passed the checks at the Checkpoint' : 'Back on its charging pad';
+    out.push({ o: st.o, t: st.t, kind: st.kind === 'reach' && st.tool ? 'tool' : st.kind, text, task: st.task, rule: null });
+  }
+  out.sort((a, b) => a.o - b.o);
+  return out.slice(-limit);
 }

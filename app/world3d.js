@@ -67,7 +67,14 @@ export function buildWorld(scene) {
       bar.setMatrixAt(i, m4); halo.setMatrixAt(i, m4); const c = col(e.v ? P.red : P.ice); bar.setColorAt(i, c); halo.setColorAt(i, c);
     });
     scene.add(bar, halo); W.rim = halo;
-    anim.push(t => { halo.material.opacity = 0.15 + 0.04 * Math.sin(t * 1.1); });
+    // W.alarm > 0 turns the whole rim red for a moment: used when a red team drill is stopped.
+    W.alarm = 0;
+    anim.push((t, dt) => {
+      W.alarm = Math.max(0, W.alarm - dt);
+      const a = clamp(W.alarm / 2.6) * (0.55 + 0.45 * Math.sin(t * 11));
+      halo.material.opacity = 0.15 + 0.04 * Math.sin(t * 1.1) + a * 0.7;
+      halo.material.color.setRGB(1, 1 - a * 0.88, 1 - a * 0.82); bar.material.color.setRGB(1, 1 - a * 0.88, 1 - a * 0.82);
+    });
   }
 
   // rock under the island, with a few crystals
@@ -355,6 +362,15 @@ export function buildWorld(scene) {
       g.add(cyl(1.7, 1.9, 0.3, 14, M.navy, x, 0.85, z));
       const r = torus(1.42, 0.06, 6, 28, lit(C.blue), x, 1.02, z, false); r.rotation.x = Math.PI / 2; g.add(r); W.dockRings.push(r);
     }
+    // three visitor pads at the front, lit only while a bot that joined from Umbra is docked on one
+    W.guestPads = [];
+    for (let k = 0; k < 3; k++) {
+      const x = (k - 1) * 4.1, z = 7.1, pg = new T.Group(); pg.position.set(x, 0, z); pg.visible = false; g.add(pg);
+      pg.add(cyl(1.7, 1.9, 0.3, 14, M.navy, 0, 0.85, 0));
+      const r = torus(1.42, 0.06, 6, 28, lit(C.accent), 0, 1.02, 0, false); r.rotation.x = Math.PI / 2; pg.add(r);
+      const r2 = torus(1.9, 0.04, 6, 32, lit(C.accent, { transparent: true, opacity: 0.5 }), 0, 0.72, 0, false); r2.rotation.x = Math.PI / 2; pg.add(r2);
+      pg.userData.ring = r; W.guestPads.push(pg);
+    }
     g.add(box(0.8, 5.4, 0.8, M.dark, 0, 3.4, -6.6));
     const bolt = canvasTex(64, 96, (c) => { c.fillStyle = P.accent; c.beginPath(); c.moveTo(38, 4); c.lineTo(10, 54); c.lineTo(30, 54); c.lineTo(24, 92); c.lineTo(54, 38); c.lineTo(34, 38); c.closePath(); c.fill(); });
     g.add(mesh(new T.PlaneGeometry(1.5, 2.2), new T.MeshBasicMaterial({ map: bolt.tex, transparent: true, side: T.DoubleSide }), 0, 6.2, -6.15, false));
@@ -400,11 +416,13 @@ export function buildWorld(scene) {
     check: [at('check', 0, 0.3), at('check', 0, 4.8), at('check', 3.6, 5.2), at('check', -3.6, 5.2)],
     gate: [0, 1, 2, 3, 4].map(k => at('gate', gx.x * (0.2 - 3.8 * k), gx.z * (0.2 - 3.8 * k))),
     launch: [at('launch', 3.4, -1.6), at('launch', -3.4, -1.6), at('launch', 4.2, 2.4), at('launch', -4.2, 2.4)],
-    dock: [0, 1, 2, 3, 4, 5, 6, 7].map(i => at('dock', -6.15 + (i % 4) * 4.1, i < 4 ? -2.3 : 2.6)),
+    dock: [0, 1, 2, 3, 4, 5, 6, 7].map(i => at('dock', -6.15 + (i % 4) * 4.1, i < 4 ? -2.3 : 2.6)).concat([0, 1, 2].map(k => at('dock', (k - 1) * 4.1, 7.1))),
     vault: [0, 1, 2].map(k => at('vault', vd.x * 9.4 + vp.x * [0, 3.8, -3.8][k], vd.z * 9.4 + vp.z * [0, 3.8, -3.8][k])),
   };
   W.slot = (id, k) => { const a = W.slots[id]; return a[Math.min(k, a.length - 1)]; };
   W.center = id => at(id, 0, 0);
+  // Where a bot that joins from Umbra comes from: high up and well outside the deck, beyond the dock.
+  W.arriveFrom = p => { const d = new T.Vector3(STATIONS.dock.x, 0, STATIONS.dock.z).normalize(); return new T.Vector3(p.x + d.x * 70 - d.z * 18, 38, p.z + d.z * 70 + d.x * 18); };
 
   W.update = (t, dt, ctx) => { for (const f of anim) f(t, dt, ctx); };
   return W;

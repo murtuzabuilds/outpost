@@ -80,11 +80,17 @@ export function makeBot(spec, i, scene) {
 
   const B = { spec, i, root, proxy, pos: new T.Vector3(), head: new T.Vector3(), yaw: 0.8, mood: 'sleep', blink: false, nextBlink: 1 + i * 0.37, cheer: 0, tilt: 0, lift: 0, ppos: new T.Vector3(), init: false };
 
+  // Bots that leave the crew (or are not there yet in a rewound view) are hidden, never destroyed.
+  B.visible = true;
+  B.setVisible = v => {
+    if (B.visible === v) return; B.visible = v; root.visible = pool.visible = v;
+    if (!v) { ring.visible = dome.visible = parcel.visible = tether.visible = false; B.init = false; }
+  };
   B.update = (a, tgt, task, dt, t, o) => {
     const k = o.snap || !B.init ? 1 : damp(dt, 11);
     B.pos.x += (tgt.x - B.pos.x) * k; B.pos.z += (tgt.z - B.pos.z) * k; B.lift += (tgt.y - B.lift) * (o.snap || !B.init ? 1 : damp(dt, 7));
     let dy = tgt.yaw - B.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); B.yaw += dy * (o.snap || !B.init ? 1 : damp(dt, 9));
-    const idle = a.state === 'idle', frozen = a.paused, bob = frozen ? 0 : Math.sin(t * 2.6 + i * 1.3) * (idle ? 0.03 : 0.12);
+    const idle = a.state === 'idle', frozen = a.paused && a.state !== 'arrive', bob = frozen ? 0 : Math.sin(t * 2.6 + i * 1.3) * (idle ? 0.03 : 0.12);
     B.pos.y = B.lift + bob; root.position.copy(B.pos); root.rotation.y = B.yaw;
 
     // body language

@@ -1,6 +1,7 @@
 // Outpost: glue between the simulation, the 3D base and the panels.
 import { T, col, clamp, smooth, damp } from './gfx.js';
-import { createSim, CREW, byId, STATIONS, RISKY, SITE_KINDS, SITE_CREW, SITE_WORDS, makeAuthority, authorityId, trialAsync, verifyLedger } from '../src/index.js';
+import { createSim, CREW, byId, STATIONS, RISKY, SITE_KINDS, SITE_CREW, SITE_WORDS, makeAuthority, authorityId, trialAsync, verifyLedger,
+  HANDOFF_KEY, readHandoff, parseHandoff, toSpec, storedWith, storedWithout, SAMPLE_AGENT, MAX_GUESTS, GUEST_PAD0, drillById, drillStoppable } from '../src/index.js';
 import { buildWorld } from './world3d.js';
 import { makeBot, makeParcel } from './bots.js';
 import { makeFx } from './fx.js';
@@ -83,10 +84,18 @@ export function boot(root = document, opts = {}) {
 
   const W = buildWorld(scene), fx = makeFx(scene, reduce), sound = makeSound();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => W.refresh.forEach(f => f()));
-  const bots = CREW.map((c, i) => makeBot(c, i, scene));
-  const botOf = id => bots.find(b => b.spec.id === id);
+  // Bots are made on first sight and kept, so a bot that joins later (or one seen in a rewind) can be drawn.
+  const bots = {}, proxies = [], tags = $('#tags'), btag = {}, bbub = {};
+  function ensureBot(id) {
+    if (bots[id]) return bots[id];
+    const c = byId[id], b = makeBot(c, c.umbra ? GUEST_PAD0 + Object.keys(bots).length : CREW.indexOf(c), scene);
+    bots[id] = b; proxies.push(b.proxy);
+    const t = document.createElement('div'); t.className = 'tag'; t.style.setProperty('--c', c.color); t.dataset.bot = id; t.textContent = c.name; tags.appendChild(t); btag[id] = t;
+    const u = document.createElement('div'); u.className = 'bub'; tags.appendChild(u); bbub[id] = u;
+    return b;
+  }
+  const botOf = id => bots[id];
   W.dockRings.forEach((r, i) => r.material.color.copy(col(CREW[i].color)));
-  const proxies = bots.map(b => b.proxy);
   for (const id of Object.keys(STATIONS)) {
     const p = new T.Mesh(new T.CylinderGeometry(6.6, 6.6, W.top[id], 8), new T.MeshBasicMaterial({ visible: false }));
     p.position.set(STATIONS[id].x, W.top[id] / 2, STATIONS[id].z); p.userData.station = id; scene.add(p); proxies.push(p);
@@ -100,7 +109,7 @@ export function boot(root = document, opts = {}) {
   sim.fx.length = 0;
   const wall = () => { const d = new Date(); return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds(); };
   if (site) { hud.setTheme(SITE_CREW, SITE_WORDS); hud.setClock(wall() - sim.state.t); }
-  let mode = 'live', viewIdx = 0, snapAcc = 0, jump = 2, sel = null, follow = null, fly = null, turn = 0, panel = null, dirty = true, hudAcc = 0, answerT = 0;
+  let mode = 'live', viewIdx = 0, snapAcc = 0, jump = 2, sel = null, follow = null, fly = null, turn = 0, panel = null, dirty = true, hudAcc = 0, answerT = 0, traceAll = false, drillWatch = null;
   // The Autonomy lab keeps a draft of the authority table. Nothing in the base changes until it is applied.
   const lab = { draft: makeAuthority(sim.state.authority), answer: 15, res: null, running: false, rev: 0 };
   let ledFilter = 'all', expText = null;
@@ -110,12 +119,9 @@ export function boot(root = document, opts = {}) {
   function coach(k) { if (coachDone[k]) return; coachDone[k] = true; const el = $(`#coach [data-c="${k}"]`); if (el) el.classList.add('ok'); if (Object.values(coachDone).every(Boolean)) setTimeout(() => { $('#coach').hidden = true; }, 2500); }
 
   // ---------- labels in the scene ----------
-  const tags = $('#tags'), slabs = {}, btag = {}, bbub = {};
+  const slabs = {};
   for (const [id, s] of Object.entries(STATIONS)) { const d = document.createElement('div'); d.className = 'slab'; d.style.setProperty('--c', s.color); d.dataset.station = id; d.innerHTML = `${s.name}<b></b>`; tags.appendChild(d); slabs[id] = d; }
-  for (const c of CREW) {
-    const t = document.createElement('div'); t.className = 'tag'; t.style.setProperty('--c', c.color); t.dataset.bot = c.id; t.textContent = c.name; tags.appendChild(t); btag[c.id] = t;
-    const b = document.createElement('div'); b.className = 'bub'; tags.appendChild(b); bbub[c.id] = b;
-  }
+  CREW.forEach(c => ensureBot(c.id));
   const v3 = new T.Vector3();
   const put = (el, x, y, z, ox, oy, ax, ay = '-100%') => {
     v3.set(x, y, z).project(cam); const sx = (v3.x * 0.5 + 0.5) * Wd + ox, sy = (-v3.y * 0.5 + 0.5) * Hd + oy;
@@ -126,6 +132,10 @@ export function boot(root = document, opts = {}) {
 
   // ---------- where each bot should be drawn ----------
   function targetOf(a, i) {
+    if (a.state === 'arrive') {                     // flying in from outside the base to its own pad
+      const B = W.slot('dock', a.slot), F = W.arriveFrom(B), k = clamp(1 - a.work / (a.dur || 2.8)), e = 1 - Math.pow(1 - k, 3), dx = B.x - F.x, dz = B.z - F.z;
+      return { x: F.x + dx * e, z: F.z + dz * e, y: 3.3 + (F.y - 3.3) * (1 - smooth(k)), yaw: Math.atan2(dx, dz), moving: true, pad: k > 0.92 };
+    }
     if (a.state === 'travel') {
       const A = W.slot(a.from, a.slotFrom), B = W.slot(a.to, a.slot), e = smooth(clamp(a.p)), dx = B.x - A.x, dz = B.z - A.z, L = Math.hypot(dx, dz) || 1;
       const lane = ((i % 3) - 1) * 1.2 + (i % 2 ? 0.6 : -0.6), bow = Math.sin(Math.PI * e) * lane;
@@ -141,7 +151,7 @@ export function boot(root = document, opts = {}) {
   // ---------- effects from simulation events ----------
   function drain() {
     for (const f of sim.fx) {
-      const b = f.agent && botOf(f.agent);
+      const b = f.agent && byId[f.agent] ? ensureBot(f.agent) : null;
       if (f.type === 'drop') dropping.add(f.task);
       else if (f.type === 'pickup') { fx.ring(W.center('inbox'), P.ice, 1, 4.5, 0.5); sound.play('pickup'); }
       else if (f.type === 'gate-wait') { fx.ring(W.center('gate'), P.amber, 1.5, 7, 0.9); sound.play('wait'); }
@@ -153,6 +163,14 @@ export function boot(root = document, opts = {}) {
       else if (f.type === 'level') { fx.burst(b.head.clone(), P.accent, 22, 6, 1.1, 1.6, 3); sound.play('level'); }
       else if (f.type === 'contain') { fx.ring(b.pos, P.red, 1.5, 6, 0.9, 0.1); sound.play('incident'); }
       else if (f.type === 'release') fx.burst(b.pos.clone(), '#FF8FA3', 12, 5, 0.7, 1.5);
+      else if (f.type === 'arrive') { const p = W.slot('dock', sim.state.agents.find(a => a.id === f.agent).slot); fx.ring(p, P.accent, 0.6, 3, 1.4); }
+      else if (f.type === 'docked') { const pad = W.slot('dock', (sim.state.agents.find(a => a.id === f.agent) || {}).slot || GUEST_PAD0); fx.ring(pad, P.accent, 1, 8, 1.1); fx.ring(W.center('dock'), P.accent, 2, 14, 1.4); fx.burst(b.pos.clone(), P.accent, 22, 7, 1, 1.8); fx.burst(b.pos.clone(), '#EAF1FF', 10, 5, 0.8, 1.4); b.cheer = 0.7; sound.play('dock'); dirty = true; }
+      else if (f.type === 'undock') { fx.burst(b.pos.clone(), P.ice, 16, 6, 0.8, 1.6); fx.ring(b.pos, P.ice, 1, 6, 0.8); }
+      else if (f.type === 'drill') {                // a red team drill was stopped: a red pulse at the station and round the whole deck
+        const c = W.center(f.at); W.alarm = 2.6; fx.burst(b.pos.clone(), P.red, 26, 8, 1.1, 2, 3);
+        [0, 260, 520].forEach(ms => setTimeout(() => fx.ring(c, P.red, 2, 17, 1.2), reduce ? 0 : ms));
+        sound.play('drill');
+      }
     }
     sim.fx.length = 0;
   }
@@ -174,9 +192,12 @@ export function boot(root = document, opts = {}) {
   const setHTML = (el, html) => { if (el._h !== html) { el._h = html; el.innerHTML = html; } };
   function paint() {
     const v = view(), past = mode !== 'live', ago = past ? Math.round(sim.state.t - v.t) : 0;
-    setHTML($('#stats'), hud.stats(v, embed)); setHTML($('#crew'), hud.crew(v, sel)); setHTML($('#radio'), hud.radio(v));
+    if (sel && sel.type === 'bot' && !v.agents.some(a => a.id === sel.id)) { sel = null; follow = null; }    // not on the crew at this moment
+    const guests = sim.state.agents.filter(a => a.guest), canDock = !past && !embed && guests.length < MAX_GUESTS && !guests.some(a => a.id === SAMPLE_AGENT.id);
+    setHTML($('#stats'), hud.stats(v, embed)); setHTML($('#crew'), hud.crew(v, sel, canDock)); setHTML($('#radio'), hud.radio(v));
     setHTML($('#alerts'), hud.alerts(v, past, ago, embed ? 1 : 2));
-    const ins = $('#inspect'), html = hud.inspect(v, sel, past); ins.hidden = !sel || (!!panel && !phone); setHTML(ins, html);
+    const items = sel && sel.type === 'bot' ? sim.trace(sel.id, v, 40) : null;
+    const ins = $('#inspect'), html = hud.inspect(v, sel, past, items, traceAll); ins.hidden = !sel || (!!panel && !phone); setHTML(ins, html);
     const li = $('#list'); li.hidden = !panel;
     if (panel === 'lab') {                      // rendered only when the lab itself changes, so a slider is never replaced mid-drag
       const key = 'lab' + lab.rev + (past ? 'p' : '') + authorityId(v.authority);
@@ -191,12 +212,13 @@ export function boot(root = document, opts = {}) {
     if (app.dataset.list !== (panel ? '1' : '0')) app.dataset.list = panel ? '1' : '0';
     setHTML($('#marks'), hud.marks(sim.state, snaps[0].t, snaps[snaps.length - 1].t));
     for (const [id, el] of Object.entries(slabs)) { const n = id === 'gate' ? v.approvals.length : id === 'inbox' ? v.queue.length : id === 'vault' ? v.incidents.length : 0, b = el.lastChild, txt = n ? String(n) : ''; if (b.textContent !== txt) b.textContent = txt; }
-    for (const a of v.agents) { const t = btag[a.id]; t.classList.toggle('sel', !!sel && sel.type === 'bot' && sel.id === a.id); t.classList.toggle('need', v.approvals.includes(a.id)); t.classList.toggle('held', a.state === 'held'); }
+    for (const a of v.agents) { const t = btag[a.id]; if (!t) continue; t.classList.toggle('sel', !!sel && sel.type === 'bot' && sel.id === a.id); t.classList.toggle('need', v.approvals.includes(a.id)); t.classList.toggle('held', a.state === 'held'); }
     dirty = false;
   }
   function say(text) { const el = $('#answer'); el.textContent = text; el.hidden = !text; answerT = 7; }
 
   function select(s, o = {}) {
+    if (!s || !sel || s.id !== sel.id) traceAll = false;
     sel = s; follow = s && s.type === 'bot' ? s.id : null; fly = s && s.type === 'station' ? W.center(s.id).clone().setY(3) : null;
     if (s && s.type === 'bot') coach('bot'); if (s && !o.quiet) sound.play('tap'); dirty = true;
   }
@@ -248,10 +270,67 @@ export function boot(root = document, opts = {}) {
       say(`Exported ${sim.ledger.length} decisions as outpost-logbook.json.`);
     } catch (e) { if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => say('Copied the logbook to the clipboard as JSON.'), () => say('This page cannot save files. Open the full base to export.')); }
   }
+  // ---------- bots approved in Umbra ----------
+  // Umbra leaves a handoff in localStorage (shared origin) or in the URL hash (local testing). It is read
+  // once on load and again whenever Umbra writes it in another tab. handoff.js checks every field.
+  const store = {
+    get() { try { return localStorage.getItem(HANDOFF_KEY); } catch (e) { return null; } },
+    set(v) { try { if (v == null) localStorage.removeItem(HANDOFF_KEY); else localStorage.setItem(HANDOFF_KEY, v); } catch (e) {} },
+  };
+  let pendingDock = null; const bootAt = performance.now();    // a handoff found on load docks just after the first frames
+  const names = list => list.length < 2 ? list.join('') : list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1];
+  function dockAll(agents, o = {}) {
+    const added = [];
+    agents.forEach((x, k) => { const a = sim.addAgent(toSpec(x, o), { arrive: 2.8 + k * 0.6 }); if (a) added.push(byId[a.id].name); });
+    if (!added.length) return [];
+    if (mode !== 'live') goLive();
+    follow = null; fly = W.center('dock').clone().setY(3); dirty = true;
+    say(`${names(added)} ${added.length > 1 ? 'are' : 'is'} docking from Umbra${o.sample ? ' (a sample handoff)' : ''}. ${added.length > 1 ? 'Each starts' : 'It starts'} Supervised, with the badge Umbra approved.`);
+    return added;
+  }
+  function readDock(hash) {
+    const r = readHandoff({ hash, stored: store.get() });
+    if (r.fromHash) {
+      store.set(storedWith(store.get(), r.agents));
+      if (!embed) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+    }
+    return r.agents.filter(x => !sim.state.agents.some(a => a.id === x.id));
+  }
+  { const first = readDock(location.hash); if (first.length) pendingDock = first; }
+  addEventListener('hashchange', () => { const n = readDock(location.hash); if (n.length) dockAll(n); });
+  addEventListener('storage', e => { if (e.key !== HANDOFF_KEY || !e.newValue) return; const n = parseHandoff(e.newValue).agents.filter(x => !sim.state.agents.some(a => a.id === x.id)); if (n.length) dockAll(n); });
+  function dockSample() {
+    if (sim.state.agents.some(a => a.id === SAMPLE_AGENT.id)) return select({ type: 'bot', id: SAMPLE_AGENT.id });
+    if (sim.state.agents.filter(a => a.guest).length >= MAX_GUESTS) return say(`The dock has room for ${MAX_GUESTS} bots from Umbra. Undock one first.`);
+    dockAll(parseHandoff({ v: 1, agents: [SAMPLE_AGENT] }).agents, { sample: true });
+  }
+  function undock(id) {
+    const c = byId[id];
+    if (!sim.removeAgent(id)) return;
+    store.set(storedWithout(store.get(), id));
+    select(null, { quiet: true });
+    say(`${c.name} undocked and was cleared from the Umbra handoff on this device.`);
+  }
+
+  // ---------- red team drills ----------
+  const dmenu = $('#drillMenu'), dbtns = [$('#drillBtn'), $('#drillBtn2')], dbtn = () => dbtns.find(x => x.offsetParent) || dbtns[0];
+  function drillOpen(on) { dmenu.hidden = !on; dbtns.forEach(x => x.setAttribute('aria-expanded', String(on))); if (on) { dmenu.innerHTML = hud.drillMenu(sim.state.authority); const f = dmenu.querySelector('button:not([disabled])'); if (f) f.focus(); } }
+  function runDrill(kind) {
+    drillOpen(false);
+    const d = drillById[kind]; if (!d) return;
+    if (!drillStoppable(d, sim.state.authority)) return say('The money rule is switched off, so nothing would stop this drill. Switch it back on in the Autonomy lab.');
+    goLive();
+    const t = sim.dispatch(d); drillWatch = t.id;
+    say(`Drill ${t.id} sent: ${d.label.toLowerCase()}. The rules never read the email, only what the bot tries to do. Watch what stops it.`);
+    fly = W.center('inbox').clone().setY(3); follow = null; dirty = true;
+  }
+  dbtns.forEach(x => { x.onclick = e => { e.stopPropagation(); drillOpen(dmenu.hidden); }; });
+  addEventListener('pointerdown', e => { if (dmenu.hidden) return; const p = e.composedPath ? e.composedPath() : []; if (!p.includes(dmenu) && !dbtns.some(x => p.includes(x))) drillOpen(false); });
+
   function rollCall() { CREW.forEach((c, i) => { setTimeout(() => { const a = sim.state.agents[i]; if (!a.say) { a.say = 'Here!'; a.sayT = sim.state.t + 1.2; } }, i * 110); }); }
 
   app.addEventListener('click', e => {
-    const t = e.target.closest('[data-bot],[data-station],[data-approve],[data-back],[data-res],[data-act],[data-tab],[data-lab],[data-filter]'); if (!t || t.disabled) return;
+    const t = e.target.closest('[data-bot],[data-station],[data-approve],[data-back],[data-res],[data-act],[data-tab],[data-lab],[data-filter],[data-drill]'); if (!t || t.disabled) return;
     const d = t.dataset;
     if (d.approve) live(() => { sim.approve(d.approve); coach('gate'); });
     else if (d.back) live(() => { sim.sendBack(d.back); coach('gate'); });
@@ -259,6 +338,10 @@ export function boot(root = document, opts = {}) {
     else if (d.tab) openPanel(d.tab);
     else if (d.lab) labAct(d.lab);
     else if (d.filter) { ledFilter = d.filter; dirty = true; }
+    else if (d.drill) runDrill(d.drill);
+    else if (d.act === 'sample-dock') dockSample();
+    else if (d.act === 'undock') live(() => undock(d.id));
+    else if (d.act === 'traceall') { traceAll = !traceAll; dirty = true; }
     else if (d.act === 'export') exportLedger();
     else if (d.act === 'closeexp') { expText = null; dirty = true; }
     else if (d.act === 'copyexp') { const ta = $('#list textarea'), done = ok => say(ok ? 'Copied the logbook as JSON.' : 'Select the text and copy it by hand.'); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(expText).then(() => done(true), () => { ta.select(); done(document.execCommand('copy')); }); else { ta.select(); done(document.execCommand('copy')); } }
@@ -291,13 +374,13 @@ export function boot(root = document, opts = {}) {
   $('#liveBtn').onclick = goLive;
   $('#scrub').oninput = e => { const i = +e.target.value; if (i >= snaps.length - 1) goLive(); else rewindTo(i); };
   addEventListener('keydown', e => {
-    if (e.key === 'Escape') { if (panel) openPanel(null); else if (sel) select(null); dirty = true; }
+    if (e.key === 'Escape') { if (!dmenu.hidden) { drillOpen(false); dbtn().focus(); } else if (panel) openPanel(null); else if (sel) select(null); dirty = true; }
     if (!embed && e.key === '/' && document.activeElement !== $('#askIn')) { e.preventDefault(); $('#askIn').focus(); }
   });
 
   // ---------- picking ----------
   const ray = new T.Raycaster(), ndc = new T.Vector2(); let down = null;
-  const hit = e => { const r = canvas.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, cam); const h = ray.intersectObjects(proxies, false); return h.length ? h[0].object.userData : null; };
+  const hit = e => { const r = canvas.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, cam); const h = ray.intersectObjects(proxies, false).find(x => !x.object.userData.bot || shown.has(x.object.userData.bot)); return h ? h.object.userData : null; };
   canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; canvas.classList.add('drag'); });
   canvas.addEventListener('pointermove', e => { if (down) { if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) { follow = null; fly = null; } return; } canvas.classList.toggle('hit', !!hit(e)); });
   addEventListener('pointerup', e => {
@@ -311,7 +394,7 @@ export function boot(root = document, opts = {}) {
   let last = performance.now(), tA = 0, intro = reduce ? 1 : 0, visible = true, ready = false, scrollAz = 0, away = false;
   if (!reduce) { cam.zoom = 0.6; cam.updateProjectionMatrix(); }
   if (window.IntersectionObserver) new IntersectionObserver(es => { visible = es[es.length - 1].isIntersecting; }, { rootMargin: '80px' }).observe(embed && opts.host ? opts.host : app);
-  const ctx = { busy: {}, waiting: 0, incidents: 0 }, dv = new T.Vector3();
+  const ctx = { busy: {}, waiting: 0, incidents: 0 }, dv = new T.Vector3(), shown = new Set();
   function frame(now) {
     requestAnimationFrame(frame);
     if (!visible) { last = now; away = true; return; }                 // nothing runs while the base is off screen
@@ -321,14 +404,28 @@ export function boot(root = document, opts = {}) {
       sim.step(dt); snapAcc += dt;
       if (snapAcc >= 0.5) { snapAcc = 0; snaps.push(sim.snapshot()); if (snaps.length > MAXSNAP) snaps.shift(); dirty = true; }
       if (sim.fx.length) { drain(); dirty = true; }
+      if (pendingDock && now - bootAt > 900) { const p = pendingDock; pendingDock = null; dockAll(p); }
+      if (drillWatch) {                                  // open the trace of whichever bot picks up the drill
+        const t = sim.state.tasks[drillWatch];
+        if (!t || t.status === 'done' || t.status === 'returned') drillWatch = null;
+        else if (t.assignee) { drillWatch = null; select({ type: 'bot', id: t.assignee }, { quiet: true }); }
+      }
     }
     const v = view(), snap = jump > 0; if (jump > 0) jump--;
     camYaw = Math.atan2(cam.position.x - target().x, cam.position.z - target().z);
     ctx.busy = {}; ctx.waiting = v.approvals.length; ctx.incidents = v.incidents.length;
     for (const a of v.agents) if (a.state === 'work' && !a.paused && a.task) { const t = v.tasks[a.task]; ctx.busy[a.goal === 'vault-in' ? 'vault' : t.route[a.step]] = t; }
     W.update(tA, dt, ctx);
-    v.agents.forEach((a, i) => bots[i].update(a, targetOf(a, i), a.task ? v.tasks[a.task] : null, dt, tA, { snap, selected: !!sel && sel.type === 'bot' && sel.id === a.id, authority: v.authority }));
-    W.dockRings.forEach((r, i) => { r.material.opacity = 1; r.scale.setScalar(v.agents[i].state === 'idle' ? 1 + Math.sin(tA * 3 + i) * 0.06 : 1); });
+    shown.clear();
+    v.agents.forEach((a, i) => {
+      const b = ensureBot(a.id); shown.add(a.id); b.setVisible(true);
+      b.update(a, targetOf(a, i), a.task ? v.tasks[a.task] : null, dt, tA, { snap, selected: !!sel && sel.type === 'bot' && sel.id === a.id, authority: v.authority });
+      if (a.state === 'arrive' && mode === 'live' && Math.random() < 0.7) fx.spark(b.pos, Math.random() < 0.5 ? P.accent : '#EAF1FF', dv.set((Math.random() - 0.5) * 2, 1 + Math.random(), (Math.random() - 0.5) * 2), 0.7, 1.8, 0);
+    });
+    for (const id in bots) if (!shown.has(id)) { bots[id].setVisible(false); btag[id].style.visibility = 'hidden'; btag[id]._off = true; bbub[id].classList.remove('on'); }
+    const onPad = i => v.agents.find(a => a.i === i);
+    W.dockRings.forEach((r, i) => { const a = onPad(i); r.material.opacity = 1; r.scale.setScalar(a && a.state === 'idle' ? 1 + Math.sin(tA * 3 + i) * 0.06 : 1); });
+    W.guestPads.forEach((g, k) => { const a = onPad(GUEST_PAD0 + k); g.visible = !!a; if (a) { g.userData.ring.material.color.copy(col(byId[a.id].color)); g.userData.ring.scale.setScalar(a.state === 'idle' ? 1 + Math.sin(tA * 3 + k) * 0.06 : 1); } });
     drawInbox(v, dt); fx.update(dt);
 
     // camera
@@ -352,7 +449,7 @@ export function boot(root = document, opts = {}) {
       else put(el, S.x, W.top[id], S.z, 0, 0, '-50%');                                    // floating above stations at the back
     }
     v.agents.forEach((a, i) => {
-      const b = bots[i]; put(btag[a.id], b.head.x, b.head.y, b.head.z, 0, 0, '-50%');
+      const b = bots[a.id]; put(btag[a.id], b.head.x, b.head.y, b.head.z, 0, 0, '-50%');
       const bb = bbub[a.id], text = a.say || ''; if (text) { if (bb.textContent !== text) bb.textContent = text; put(bb, b.head.x, b.head.y, b.head.z, 12, -22, '0%'); }
       bb.classList.toggle('on', !!text);
     });
@@ -364,7 +461,7 @@ export function boot(root = document, opts = {}) {
   paint(); requestAnimationFrame(frame);
   // Something real happened on the host page: hand it to the crew as a task.
   const event = (title, kind = 'summary') => { if (sim.state.queue.length >= 4) return null; if (mode !== 'live') goLive(); const t = sim.dispatch(kind, { title, from: 'page' }); dirty = true; return t; };
-  const handle = { sim, cam, select, goLive, rewindTo, snaps, event };
+  const handle = { sim, cam, select, goLive, rewindTo, snaps, event, dockSample, runDrill };
   window.__outpost = handle;
   return handle;
 }

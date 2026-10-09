@@ -58,9 +58,16 @@ export function nextLevel(clean, authority = DEFAULT_AUTHORITY) {
   return n ? { level: n, runs: n.min - clean } : null;
 }
 
+// The money a bot may move alone: its level's limit, or less if the bot arrived with a lower ceiling
+// (`agent.cap`, set where the bot was approved). A cap can only lower the limit, never raise it.
+export function limitOf(agent, authority = DEFAULT_AUTHORITY) {
+  const l = levelOf(agent.clean, authority).limit, cap = Number(agent.cap);
+  return agent.cap != null && Number.isFinite(cap) && cap >= 0 ? Math.min(l, cap) : l;
+}
+
 // Rules are checked in this order, and the first one that applies is the reason shown to the person.
 export function needsApproval(task, agent, authority = DEFAULT_AUTHORITY) {
-  const level = levelOf(agent.clean, authority), risk = task.risk || [];
+  const level = { ...levelOf(agent.clean, authority), limit: limitOf(agent, authority) }, risk = task.risk || [];
   if (risk.includes('leaves-company'))
     return { needed: true, rule: 'data-out', reason: 'This sends data outside the company' };
   if (risk.includes('irreversible'))
@@ -80,11 +87,11 @@ export function canUse(agent, tool) {
 //   stop   the tool is not on the bot's badge, so the action must not run
 //   hold   a rule says a person has to say yes first
 //   allow  the bot may go ahead alone
-// `action` is { tool, risk?: string[], amount?: number }. `agent` is { name, clean, tools }.
+// `action` is { tool, risk?: string[], amount?: number }. `agent` is { name, clean, tools, cap? }.
 // This is the only place a decision is made: the simulation, the tests and the Autonomy lab all call it,
 // and it is the function a real agent runtime would call before running a tool.
 export function decide(action, agent, authority = DEFAULT_AUTHORITY) {
-  const level = levelOf(agent.clean, authority), base = { level: level.id, limit: level.limit, authority: authorityId(authority) };
+  const level = { ...levelOf(agent.clean, authority), limit: limitOf(agent, authority) }, base = { level: level.id, limit: level.limit, authority: authorityId(authority) };
   if (!canUse(agent, action.tool))
     return { outcome: 'stop', rule: 'badge', reason: `${action.tool} is not on ${agent.name}'s badge`, ...base };
   const a = needsApproval(action, agent, authority);

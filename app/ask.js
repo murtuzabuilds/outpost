@@ -1,6 +1,6 @@
 // The command bar. Typed requests are matched with plain rules, not a language model,
 // so the same words always do the same thing. In a real product a model would fill this slot.
-import { CREW, byId, statusOf } from '../src/index.js';
+import { byId, statusOf } from '../src/index.js';
 
 const AREAS = [
   { re: /pay|money|refund|invoice|billing/, prefix: 'payments', label: 'payments' },
@@ -14,7 +14,7 @@ const list = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and 
 export function ask(text, api) {
   const q = text.toLowerCase().trim(), s = api.sim.state;
   if (!q) return '';
-  const bot = CREW.find(c => new RegExp('\\b' + c.id + '\\b').test(q));
+  const bot = s.agents.map(a => byId[a.id]).find(c => new RegExp('\\b' + c.name.toLowerCase().replace(/[^a-z0-9 ]/g, '') + '\\b').test(q));
   const names = ids => list(ids.map(id => byId[id].name));
 
   if (/who.*(need|wait)|waiting on me|needs? me|what.*need/.test(q)) {
@@ -32,7 +32,7 @@ export function ask(text, api) {
     if (bot) { api.sim.pause(bot.id); api.select(bot.id); return `${bot.name} is paused. It stays where it is until you resume it.`; }
     const area = AREAS.find(a => a.re.test(q));
     if (area) { const ids = api.sim.pauseWhere(area.prefix); return ids.length ? `Paused ${names(ids)}: every bot that can touch ${area.label}.` : `Every bot that can touch ${area.label} is already paused.`; }
-    if (/all|every/.test(q)) { const ids = CREW.map(c => c.id).filter(id => api.sim.pause(id)); return `Paused all ${ids.length} bots.`; }
+    if (/all|every/.test(q)) { const ids = s.agents.map(a => a.id).filter(id => api.sim.pause(id)); return `Paused all ${ids.length} bots.`; }
     return 'Pause who? Try "pause Juno" or "pause everything touching payments".';
   }
   if (/risky|refund|export|close account|danger/.test(q) && /send|new|give|try|make/.test(q)) { const t = api.dispatch(/export|data/.test(q) ? 'export' : /close/.test(q) ? 'close' : 'refund'); return `Sent ${t.id}: ${t.title}. Watch the Gate.`; }

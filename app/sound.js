@@ -18,6 +18,8 @@ export function makeSound() {
     level: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.08, 0.16, 'triangle', 0.09)); },
     fail: () => { tone(220, 0, 0.2, 'sawtooth', 0.05, 150); },
     tap: () => { tone(660, 0, 0.05, 'square', 0.03); },
+    dock: () => { [392, 523, 659, 880].forEach((f, i) => tone(f, i * 0.11, 0.42, 'sine', 0.05)); },
+    drill: () => { tone(110, 0, 0.32, 'sawtooth', 0.05, 82); tone(110, 0.4, 0.32, 'sawtooth', 0.05, 82); tone(880, 0.85, 0.2, 'sine', 0.035); },
   };
   return {
     get on() { return on; },

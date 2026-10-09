@@ -41,11 +41,12 @@ export function makeTask(kind, r, seq, opts = {}, kinds = KINDS) {
   const k = typeof kind === 'string' ? kinds.find(x => x.kind === kind) : kind;
   let amount = null;
   if (k.amount) amount = opts.amount ?? Math.round((k.amount[0] + r() * (k.amount[1] - k.amount[0])) / 5) * 5;
-  const reach = k.reach && (opts.reach ?? r() < k.reach.p) ? { tool: k.reach.tool, what: k.reach.what, label: k.reach.label || null } : null;
+  const reach = k.reach && (opts.reach ?? r() < k.reach.p) ? { tool: k.reach.tool, what: k.reach.what, label: k.reach.label || null, risk: k.reach.risk ? k.reach.risk.slice() : [] } : null;
   return {
     id: 'T-' + String(seq).padStart(3, '0'),
     kind: k.kind, title: opts.title || k.title(r, amount), tool: k.tool, team: k.team, library: k.library,
     risk: k.risk.slice(), amount, reach, why: k.why || null, from: opts.from || null,
+    drill: k.drill || null, text: k.text || null,
     cost: Math.round((0.03 + r() * 0.3) * 100) / 100,
     status: 'queued', assignee: null, approval: null, approved: false, reworked: false, route: null,
   };
