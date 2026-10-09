@@ -71,11 +71,11 @@ function botPanel(v, id, past, items, all) {
   const lim = limitFor(a, v), capped = c.cap != null && lim < lv.limit;
   const limit = !v.authority.rules.money ? 'No money limit: the money rule is switched off.' : lim ? `Moves up to ${money(lim)} without asking${capped ? ', the ceiling Umbra set' : ''}.` : lv.id === 'supervised' && v.authority.rules.customer ? 'Asks before moving any money or messaging a customer.' : 'Asks before moving any money.';
   const u = c.umbra, umb = u ? `<div class="umb"><div class="umb-h">${umbraChip(c)}<span>${esc(u.approvedOn)}</span></div>
-    <span class="umb-n">Named "${esc(u.umbraName)}" in Umbra. Money ceiling set there: ${money(u.limit)}.</span>
+    <span class="umb-n">Named "${esc(u.umbraName)}" in Umbra. ${c.model ? `Runs on ${esc(c.model)}, an approved model. ` : ''}Money ceiling set there: ${money(u.limit)}.</span>
     ${u.rules.length ? `<ul>${u.rules.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
     <p class="fine">Outpost enforces the badge and the money ceiling. The other limits are shown as Umbra wrote them.</p></div>` : '';
   const glossed = task && task.route ? `<p class="route-g">${task.route.filter(s => s !== 'inbox').map(s => `<b>${STATIONS[s].name.replace(/^The /, 'the ')}</b> (${STATIONS[s].gloss})`).join(' &middot; ')}</p>` : '';
-  const approved = !u && home() && !c.umbra ? `<p class="ubl"><i class="ub">Umbra</i>Approved in Umbra &middot; owner ${esc(c.owner)}</p>` : '';
+  const approved = !u && home() && !c.umbra ? `<p class="ubl"><i class="ub">Umbra</i>Approved in Umbra &middot; owner ${esc(c.owner)}${c.model ? ` &middot; runs on ${esc(c.model)}` : ''}</p>` : '';
   const drill = task && task.drill ? `<q class="dq"><b>Drill</b>${esc(task.text)}</q>` : '';
   return `<div class="in-h" style="--c:${c.color}">${av(c.color)}<div><b>${esc(c.name)}</b><span>${esc(c.job)}. Owned by ${esc(c.owner)}${c.team ? ', ' + esc(c.team) : ''}</span></div><button type="button" class="x" data-act="close" aria-label="Close">&times;</button></div>
   ${approved}${u ? '' : `<p class="quirk">${esc(c.quirk)}</p>`}${umb}

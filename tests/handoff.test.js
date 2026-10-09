@@ -20,7 +20,7 @@ test('a valid handoff parses to the known fields only', () => {
   const r = parseHandoff(JSON.stringify(wrap([{ ...agent(), extra: 'ignored', clean: 99 }])));
   assert.equal(r.agents.length, 1); assert.deepEqual(r.errors, []);
   const a = r.agents[0];
-  assert.deepEqual(Object.keys(a).sort(), ['approvedAt', 'id', 'job', 'limit', 'name', 'owner', 'rules', 'source', 'team', 'tools', 'umbraName'].sort());
+  assert.deepEqual(Object.keys(a).sort(), ['approvedAt', 'id', 'job', 'limit', 'name', 'owner', 'rules', 'source', 'team', 'tools', 'umbraName', 'model'].sort());
   assert.equal(a.clean, undefined);
 });
 
@@ -185,4 +185,12 @@ test('at most three docked bots, each on its own pad, and undocking returns its 
 test('a docked bot never shares a name with a crew member', () => {
   const spec = toSpec({ id: 'umb-x', name: 'Moss', job: '', owner: 'A', team: '', tools: ['crm.read'], limit: 0, approvedAt: '2026-10-01T00:00:00Z', umbraName: 'X', rules: [] });
   assert.equal(spec.name, 'Moss 2');
+});
+
+test('the model Umbra approved travels with a docked bot, and every crew bot runs on an approved model', async () => {
+  const { CREW } = await import('../src/crew.js');
+  for (const c of CREW) assert.ok(['Aster Enterprise', 'Nova Model API'].includes(c.model), `${c.name} runs on an approved model`);
+  const r = parseHandoff(JSON.stringify({ v: 1, agents: [{ id: 'umb-unknown-7f3', name: 'Fern', job: 'Drafts emails', owner: 'Gabe Lopez', team: 'Marketing', tools: ['email.send', 'crm.read'], limit: 0, approvedAt: '2026-10-09T10:00:00.000Z', source: 'umbra', umbraName: 'Agent 7f3', model: 'Aster Enterprise', rules: [] }] }));
+  assert.equal(r.agents[0].model, 'Aster Enterprise');
+  assert.equal(toSpec(r.agents[0]).model, 'Aster Enterprise');
 });

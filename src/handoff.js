@@ -1,6 +1,6 @@
 // The handoff from Umbra: how a bot approved in Umbra joins the crew here.
 //
-// Umbra decides which agents are allowed in, names an owner and lists what each may touch. It hands that
+// Umbra decides what AI gets in: which agents are allowed, their owner, the approved model each runs on and what each may touch. It hands that
 // over in one of two ways, carrying the same object:
 //   localStorage key `umbra.outpost.handoff`  (both sites share an origin in production)
 //   URL hash `#dock=<base64url of the JSON>`   (covers local testing on different ports)
@@ -38,12 +38,13 @@ export function checkAgent(x) {
   if (!tools.length) return { error: `${x.id}: no known tools` };
   if (typeof x.limit !== 'number' || !Number.isFinite(x.limit) || x.limit < 0) return { error: `${x.id}: bad limit` };
   if (typeof x.approvedAt !== 'string' || x.approvedAt.length > 40 || !ISO.test(x.approvedAt) || Number.isNaN(Date.parse(x.approvedAt))) return { error: `${x.id}: bad approvedAt` };
+  const model = cleanText(x.model, 40);
   const rules = Array.isArray(x.rules) ? x.rules.map(r => cleanText(r, CAP.rule)).filter(Boolean).slice(0, CAP.rules) : [];
   return {
     agent: {
       id: x.id, name, job: cleanText(x.job, CAP.job), owner, team: cleanText(x.team, CAP.team), tools,
       limit: Math.min(100000, Math.round(x.limit)), approvedAt: x.approvedAt, source: 'umbra',
-      umbraName: cleanText(x.umbraName, CAP.umbraName) || name, rules,
+      umbraName: cleanText(x.umbraName, CAP.umbraName) || name, model, rules,
     },
   };
 }
@@ -122,7 +123,7 @@ export function storedWithout(stored, id) {
   return left.length ? JSON.stringify({ v: 1, agents: left.map(toContract) }) : null;
 }
 
-export const toContract = a => ({ id: a.id, name: a.name, job: a.job, owner: a.owner, team: a.team, tools: a.tools.slice(), limit: a.limit, approvedAt: a.approvedAt, source: 'umbra', umbraName: a.umbraName, rules: a.rules.slice() });
+export const toContract = a => ({ id: a.id, name: a.name, job: a.job, owner: a.owner, team: a.team, tools: a.tools.slice(), limit: a.limit, approvedAt: a.approvedAt, source: 'umbra', umbraName: a.umbraName, model: a.model, rules: a.rules.slice() });
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 export function formatDate(iso) {
@@ -142,7 +143,7 @@ export function toSpec(a, o = {}) {
   return {
     id: a.id, name, job: a.job || 'Approved in Umbra', owner: a.owner, team: a.team, clean: 0, cap: a.limit,
     color: COLORS[h % COLORS.length], body: BODIES[(h >>> 8) % BODIES.length], hat: HATS[(h >>> 16) % HATS.length],
-    tools: a.tools.slice(), quirk: `Known in Umbra as ${a.umbraName}.`,
+    tools: a.tools.slice(), model: a.model || '', quirk: `Known in Umbra as ${a.umbraName}.`,
     umbra: { umbraName: a.umbraName, rules: a.rules.slice(), approvedAt: a.approvedAt, approvedOn: formatDate(a.approvedAt), limit: a.limit, sample: !!o.sample },
   };
 }
@@ -154,6 +155,6 @@ export function toSpec(a, o = {}) {
 export const SAMPLE_AGENT = Object.freeze({
   id: 'umb-sample-lark', name: 'Lark', job: 'Claim status emails', owner: 'Hana Lopez', team: 'Customer Care',
   tools: ['email.send', 'crm.read', 'crm.write'], limit: 0, approvedAt: '2026-10-06T14:20:00Z', source: 'umbra',
-  umbraName: 'Sample agent',
+  umbraName: 'Sample agent', model: 'Aster Enterprise',
   rules: ['Answers customers about their own claim only', 'Moves no money', 'Its customer emails wait for a person\'s yes while it is Supervised'],
 });

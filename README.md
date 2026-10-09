@@ -111,7 +111,7 @@ I built two products about AI inside a company because they are two different jo
 | Timescale | Weeks and quarters | Seconds and minutes |
 | Uses AI to | Draft rules and summarise incidents | Nothing. No model is in the decision |
 
-**Where they meet:** Umbra's last step with an agent is to approve it, name its owner and list what it may touch. That is what Outpost needs to put a bot on the crew: an owner and a badge. Umbra decides which agents get in. Outpost is where they go to work. Both demos use the same fictional insurer, Kestrel Mutual.
+**Where they meet:** Umbra decides what AI gets in; Outpost runs the agents that got in. Umbra's last step with an agent is to approve it, name its owner, pick the approved model it runs on and list what it may touch. That is what Outpost needs to put a bot on the crew: an owner and a badge. Umbra decides which agents get in. Outpost is where they go to work. Both demos use the same fictional insurer, Kestrel Mutual.
 
 The handoff is a small contract. Umbra writes `{"v":1,"agents":[...]}` to the localStorage key `umbra.outpost.handoff` (both sites share an origin) and also opens Outpost with `#dock=` and the same object as base64url, for testing across ports. Outpost reads the hash first, then storage, and treats both as untrusted: `src/handoff.js` checks every field, drops tools it does not know, cuts text to length, ignores anything malformed and docks at most three bots. Undocking a bot also removes it from the stored handoff.
 
