@@ -115,6 +115,8 @@ I built two products about AI inside a company because they are two different jo
 
 The handoff is a small contract. Umbra writes `{"v":1,"agents":[...]}` to the localStorage key `umbra.outpost.handoff` (both sites share an origin) and also opens Outpost with `#dock=` and the same object as base64url, for testing across ports. Outpost reads the hash first, then storage, and treats both as untrusted: `src/handoff.js` checks every field, drops tools it does not know, cuts text to length, ignores anything malformed and docks at most three bots. Undocking a bot also removes it from the stored handoff.
 
+Models flow the other way too. Umbra decides which models agents may run on, and a person can pause one there. Umbra writes `{"v":1,"paused":[{"id","name"}]}` to `umbra.models.paused`; Outpost reads it on load and listens for changes, so every bot that runs on that model stops right away: its task goes back to the Inbox, anything it was waiting on at the Gate or the Vault is cleared, and it flies home showing "Paused in Umbra". It can only be resumed in Umbra; a bot you paused by hand stays paused when the model comes back. Each stop and resume is written to the logbook as a decision by Umbra (`src/models.js`, `holdModels` in `src/sim.js`).
+
 ## What is simulated
 
 - Kestrel Mutual is fictional.

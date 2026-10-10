@@ -279,12 +279,40 @@ export function createSim(seed = 7, opts = {}) {
   }
 
   function pause(id) { const a = A(id); if (!a || a.paused) return false; a.paused = true; say(a, 'paused'); log('pause', `You paused ${name(a)}`, id); record({ agent: id, task: a.task, noAmount: true, tool: '-', outcome: 'paused', reason: `${name(a)} was paused by hand`, by: 'person' }); return true; }
-  function resume(id) { const a = A(id); if (!a || !a.paused) return false; a.paused = false; say(a, 'resumed'); log('resume', `You resumed ${name(a)}`, id); record({ agent: id, task: a.task, noAmount: true, tool: '-', outcome: 'resumed', reason: `${name(a)} was resumed by hand`, by: 'person' }); return true; }
+  function resume(id) { const a = A(id); if (!a || !a.paused || a.modelHold) return false; a.paused = false; say(a, 'resumed'); log('resume', `You resumed ${name(a)}`, id); record({ agent: id, task: a.task, noAmount: true, tool: '-', outcome: 'resumed', reason: `${name(a)} was resumed by hand`, by: 'person' }); return true; }
   function pauseWhere(prefix) {
     const hit = s.agents.filter(a => !a.paused && byId[a.id].tools.some(t => t.startsWith(prefix)));
     hit.forEach(a => pause(a.id)); return hit.map(a => a.id);
   }
-  function resumeAll() { const hit = s.agents.filter(a => a.paused); hit.forEach(a => resume(a.id)); return hit.map(a => a.id); }
+  function resumeAll() { const hit = s.agents.filter(a => a.paused && !a.modelHold); hit.forEach(a => resume(a.id)); return hit.map(a => a.id); }
+  // Models paused in Umbra. Every bot that runs on one stops: a task it holds goes back to the Inbox, nothing it
+  // held is left waiting at the Gate or the Vault, and it flies home. When Umbra resumes the model, the bots this
+  // stopped can work again (a bot you had paused by hand stays paused). `models` is the full list paused right now.
+  function holdModels(models) {
+    const off = new Set((models || []).filter(Boolean)), held = [], freed = [];
+    for (const a of s.agents) {
+      const m = byId[a.id].model || '';
+      if (off.has(m) && !a.modelHold) {
+        const task = a.task && s.tasks[a.task];
+        a.modelHold = m; a.handPaused = a.paused; a.paused = true; held.push(a.id);
+        const ai = s.approvals.indexOf(a.id); if (ai >= 0) s.approvals.splice(ai, 1);
+        s.incidents = s.incidents.filter(x => x.agent !== a.id);
+        if (task) { task.status = 'queued'; task.assignee = null; task.route = null; task.approval = null; task.approved = false; s.queue.unshift(task.id); a.task = null; }
+        if (a.state !== 'arrive' && a.state !== 'idle') { if (a.state === 'travel') a.at = a.p < 0.5 ? a.from : a.to; go(a, 'dock', 'home'); }
+        if (a.state !== 'arrive') a.mood = 'paused';
+        say(a, 'paused', 3);
+        record({ agent: a.id, task: task ? task.id : null, tool: '-', noAmount: true, outcome: 'model paused', reason: `${m} was paused in Umbra${task ? `, so ${task.id} went back to the Inbox` : ''}`, by: 'umbra' });
+        log('model', `${name(a)} stopped: ${m} was paused in Umbra${task ? `. ${task.id} is back in the Inbox` : ''}`, a.id, task ? task.id : null);
+      } else if (!off.has(m) && a.modelHold) {
+        const was = a.modelHold; a.modelHold = null; a.paused = !!a.handPaused; delete a.handPaused; freed.push(a.id);
+        if (!a.paused && a.state === 'idle') a.mood = 'sleep';
+        if (!a.paused) say(a, 'resumed');
+        record({ agent: a.id, tool: '-', noAmount: true, outcome: 'model resumed', reason: `${was} was resumed in Umbra`, by: 'umbra' });
+        log('model', `${name(a)} can work again: ${was} was resumed in Umbra`, a.id);
+      }
+    }
+    return { held, freed };
+  }
   function revoke(id) { const a = A(id); if (!a) return false; a.clean = 0; log('revoke', `You reset ${name(a)} to Supervised`, id); record({ agent: id, outcome: 'trust reset', reason: `${name(a)} is back to Supervised`, by: 'person' }); return true; }
 
   // Swaps the authority table while the base is running. Work already past the decision point keeps the
@@ -359,7 +387,7 @@ export function createSim(seed = 7, opts = {}) {
   return {
     get state() { return s; }, fx, crew: CREW,
     get ledger() { return ledger; }, get steps() { return steps; },
-    step, dispatch, approve, sendBack, resolve, pause, resume, pauseWhere, resumeAll, revoke, setAuthority, addAgent, removeAgent,
+    step, dispatch, approve, sendBack, resolve, pause, resume, pauseWhere, resumeAll, holdModels, revoke, setAuthority, addAgent, removeAgent,
     // The trace for one bot, as of `view` (the live state, or a snapshot when rewound).
     trace(id, view = s, limit) { return traceOf(view, ledger, steps, id, limit); },
     setAuto(v) { s.auto = !!v; },
@@ -372,6 +400,7 @@ export function createSim(seed = 7, opts = {}) {
 export function statusOf(state, id) {
   const a = state.agents.find(x => x.id === id), task = a.task && state.tasks[a.task];
   if (a.state === 'arrive') return 'Flying in from Umbra';
+  if (a.modelHold) return `Paused: ${a.modelHold} is paused in Umbra`;
   if (a.paused) return 'Paused by you';
   if (a.state === 'held') return 'Stopped at the Vault';
   if (a.state === 'wait') return 'Waiting at the Gate for your yes';
@@ -392,7 +421,7 @@ export function statusOf(state, id) {
 // the ledger (every decision, with its rule and the authority table it was made under) and the step record
 // (where it arrived and which tool it used). Nothing here is a model's reasoning; there is no model.
 // Log lines that the ledger also records (a person's answers, pauses, docking) are taken from the ledger only.
-const FROM_LEDGER = new Set(['approve', 'back', 'grant', 'deny', 'pause', 'resume', 'revoke', 'dock', 'undock']);
+const FROM_LEDGER = new Set(['approve', 'back', 'grant', 'deny', 'pause', 'resume', 'revoke', 'dock', 'undock', 'model']);
 const PLACE_NAME = id => ({ gate: 'the Gate', vault: 'the Vault' }[id] || 'the ' + STATIONS[id].name);
 const DECIDED = { allow: 'Allowed', hold: 'Held for a person', stop: 'Stopped' };
 const PERSON = { approved: 'Approved', 'sent back': 'Sent back', 'kept out': 'Kept out', 'allowed once': 'Allowed once', 'bot paused': 'Paused', paused: 'Paused', resumed: 'Resumed', 'trust reset': 'Trust reset', undocked: 'Undocked' };
@@ -414,7 +443,7 @@ export function traceOf(state, ledger, steps, id, limit = 40) {
   for (const e of ledger) {
     if (e.agent !== id || e.t > until) continue;
     if (e.by === 'rules') out.push({ o: e.o || 0, t: e.t, kind: 'decide', outcome: e.outcome, text: `${DECIDED[e.outcome] || e.outcome}${e.tool ? ` (${e.tool}${e.amount != null ? ', $' + e.amount.toLocaleString('en-US') : ''})` : ''}. ${e.reason || ''}`.trim(), task: e.task, rule: e.rule || 'none', authority: e.authority });
-    else if (e.by === 'umbra') out.push({ o: e.o || 0, t: e.t, kind: 'dock', text: e.reason || 'Docked from Umbra', task: null, rule: null, authority: e.authority });
+    else if (e.by === 'umbra') out.push({ o: e.o || 0, t: e.t, kind: /^model/.test(e.outcome) ? 'model' : 'dock', text: /^model/.test(e.outcome) ? `${e.outcome === 'model paused' ? 'Stopped by Umbra' : 'Resumed by Umbra'}. ${e.reason}` : e.reason || 'Docked from Umbra', task: null, rule: null, authority: e.authority });
     else out.push({ o: e.o || 0, t: e.t, kind: 'person', outcome: e.outcome, text: `${PERSON[e.outcome] || e.outcome}. ${e.reason || ''}`.trim(), task: e.task, rule: e.rule || null, authority: e.authority });
   }
   for (const st of steps) {

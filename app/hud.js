@@ -32,6 +32,7 @@ export function stats(v, sim) {
 
 const PLACE = { inbox: 'Inbox', beacon: 'Briefing', library: 'Library', workshop: 'Workshop', check: 'Checkpoint', gate: 'Gate', launch: 'Launchpad', dock: 'Dock', vault: 'Vault' };
 function brief(v, a) {
+  if (a.modelHold) return 'Paused in Umbra';
   if (a.paused) return 'Paused';
   if (a.state === 'held') return 'Stopped at the Vault';
   if (a.state === 'wait') return 'Waits for your yes';
@@ -49,11 +50,14 @@ export function crew(v, sel, canDock) {
   }).join('') + (canDock ? `<button type="button" class="dock-s" data-act="sample-dock"><span>Dock a bot from Umbra</span><i>Sample</i></button>` : '');
 }
 
+// A bot stopped because its model is paused in Umbra is resumed there, not here.
+const umbraHeld = a => `<button type="button" class="btn sm ghost" disabled title="${esc(a.modelHold)} is paused in Umbra. It is resumed there.">Paused in Umbra</button>`;
+
 const NAMES = { inbox: 'Inbox', beacon: 'Briefing', library: 'Library', workshop: 'Workshop', check: 'Checkpoint', gate: 'Gate', launch: 'Launchpad' };
 
 // The trace: a timeline of records for one bot, newest first. `items` comes from sim.trace().
 // Who or what a line is from, shown only where the text does not already say it.
-const TK = { decide: 'Rules', person: 'You', drill: 'Drill', dock: 'Umbra' };
+const TK = { decide: 'Rules', person: 'You', drill: 'Drill', dock: 'Umbra', model: 'Umbra' };
 function traceBlock(v, id, items, all) {
   const SHOW = 6, rows = items.slice().reverse().slice(0, all ? 40 : SHOW).map(x => {
     const chips = x.kind === 'decide' || x.kind === 'person' || x.kind === 'drill' || (x.kind === 'wait' && x.rule)
@@ -84,7 +88,7 @@ function botPanel(v, id, past, items, all) {
   ${items ? traceBlock(v, id, items, all) : ''}
   <div class="lvl" style="--c:${c.color}"><small>Trust grows with each task shipped</small><div class="lvbar">${v.authority.levels.map((l, i) => `<i class="${i <= li ? 'on' : ''}"></i>`).join('')}</div><b>${lv.name}</b><span>${limit} ${nx ? `${nx.runs} more task${nx.runs > 1 ? 's' : ''} shipped to reach ${nx.level.name}.` : 'Top level.'}</span></div>
   <div class="badge"><small>Badge: what it may touch</small><ul>${c.tools.map(t => `<li>${esc(TOOLS[t])}</li>`).join('')}</ul></div>
-  <div class="acts">${past ? '' : `<button type="button" class="btn sm ${a.paused ? 'pri' : ''}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${id}">${a.paused ? 'Resume' : 'Pause'}</button>${a.clean > 0 ? `<button type="button" class="btn sm ghost" data-act="revoke" data-id="${id}">Reset trust</button>` : ''}${a.guest ? `<button type="button" class="btn sm ghost" data-act="undock" data-id="${id}">Undock</button>` : ''}`}</div>`;
+  <div class="acts">${past ? '' : `${a.modelHold ? umbraHeld(a) : `<button type="button" class="btn sm ${a.paused ? 'pri' : ''}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${id}">${a.paused ? 'Resume' : 'Pause'}</button>`}${a.clean > 0 ? `<button type="button" class="btn sm ghost" data-act="revoke" data-id="${id}">Reset trust</button>` : ''}${a.guest ? `<button type="button" class="btn sm ghost" data-act="undock" data-id="${id}">Undock</button>` : ''}`}</div>`;
 }
 
 const RULES = ['Data leaving the company: always.', 'Anything that cannot be undone: always.', '', 'Customer messages: only while a bot is Supervised.'];
@@ -146,14 +150,14 @@ const head = (tab, sub) => `<div class="list-h"><div class="tabs" role="tablist"
 export function list(v, past) {
   const rows = v.agents.map(a => {
     const c = who(a.id), lv = levelOf(a.clean, v.authority), lim = limitFor(a, v), task = a.task && v.tasks[a.task], need = v.approvals.includes(a.id), inc = v.incidents.find(x => x.agent === a.id);
-    return `<div class="tr ${flag(v, a)}"><span class="nm">${av(c.color)}${esc(c.name)}</span><span>${esc(c.job)}<em>${esc(c.owner)}${dockedAs(byId[a.id], true)}</em></span><span class="do">${esc(statusOf(v, a.id))}${task ? `<em>${esc(task.title)}</em>` : ''}</span><span>${lv.name}</span><span class="num">${v.authority.rules.money ? money(lim) : 'none'}</span><span class="num">${a.shipped}</span><span class="ac">${past ? '' : need ? `<button type="button" class="btn sm pri" data-approve="${a.id}">Approve</button><button type="button" class="btn sm ghost" data-back="${a.id}">Send back</button>` : inc ? `<button type="button" class="btn sm pri" data-res="${inc.id}:deny">Keep it out</button><button type="button" class="btn sm ghost" data-res="${inc.id}:grant">Allow once</button>` : `<button type="button" class="btn sm ${a.paused ? 'pri' : 'ghost'}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${a.id}">${a.paused ? 'Resume' : 'Pause'}</button>`}<button type="button" class="btn sm ghost" data-bot="${a.id}">Find</button></span></div>`;
+    return `<div class="tr ${flag(v, a)}"><span class="nm">${av(c.color)}${esc(c.name)}</span><span>${esc(c.job)}<em>${esc(c.owner)}${dockedAs(byId[a.id], true)}</em></span><span class="do">${esc(statusOf(v, a.id))}${task ? `<em>${esc(task.title)}</em>` : ''}</span><span>${lv.name}</span><span class="num">${v.authority.rules.money ? money(lim) : 'none'}</span><span class="num">${a.shipped}</span><span class="ac">${past ? '' : need ? `<button type="button" class="btn sm pri" data-approve="${a.id}">Approve</button><button type="button" class="btn sm ghost" data-back="${a.id}">Send back</button>` : inc ? `<button type="button" class="btn sm pri" data-res="${inc.id}:deny">Keep it out</button><button type="button" class="btn sm ghost" data-res="${inc.id}:grant">Allow once</button>` : a.modelHold ? umbraHeld(a) : `<button type="button" class="btn sm ${a.paused ? 'pri' : 'ghost'}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${a.id}">${a.paused ? 'Resume' : 'Pause'}</button>`}<button type="button" class="btn sm ghost" data-bot="${a.id}">Find</button></span></div>`;
   }).join('');
   return `${head('roll', `The same crew and the same buttons, as a plain list.${home() ? ' ' + UMBRA_LINE : ''}`)}
   <div class="scroll"><div class="tbl"><div class="tr h"><span>Bot</span><span>Job</span><span>Doing now</span><span>Trust</span><span>Limit</span><span>Shipped</span><span></span></div>${rows}</div></div>`;
 }
 
 export function marks(v, t0, t1) {
-  return v.log.filter(l => l.t >= t0 && l.t <= t1 && (l.kind === 'wait' || l.kind === 'incident' || l.kind === 'ship' || l.kind === 'drill' || l.kind === 'dock'))
+  return v.log.filter(l => l.t >= t0 && l.t <= t1 && (l.kind === 'wait' || l.kind === 'incident' || l.kind === 'ship' || l.kind === 'drill' || l.kind === 'dock' || l.kind === 'model'))
     .map(l => `<i class="k-${l.kind}" style="left:${(((l.t - t0) / Math.max(1, t1 - t0)) * 100).toFixed(1)}%"></i>`).join('');
 }
 
@@ -206,7 +210,7 @@ export function lab(L, live, past) {
 }
 
 // ---------- Logbook ----------
-const OUT = { allow: 'Allowed', hold: 'Held', stop: 'Stopped', approved: 'Approved', 'sent back': 'Sent back', 'kept out': 'Kept out', 'allowed once': 'Allowed once', 'bot paused': 'Bot paused', 'authority changed': 'Limits changed', 'trust reset': 'Trust reset', paused: 'Paused', resumed: 'Resumed', 'state restored': 'Restored', docked: 'Docked', undocked: 'Undocked' };
+const OUT = { allow: 'Allowed', hold: 'Held', stop: 'Stopped', approved: 'Approved', 'sent back': 'Sent back', 'kept out': 'Kept out', 'allowed once': 'Allowed once', 'bot paused': 'Bot paused', 'authority changed': 'Limits changed', 'trust reset': 'Trust reset', paused: 'Paused', resumed: 'Resumed', 'state restored': 'Restored', docked: 'Docked', undocked: 'Undocked', 'model paused': 'Model paused in Umbra', 'model resumed': 'Model resumed in Umbra' };
 const FILTERS = [['all', 'All'], ['hold', 'Held'], ['stop', 'Stopped'], ['person', 'By a person']];
 const pass = (e, f) => f === 'hold' ? e.outcome === 'hold' : f === 'stop' ? e.outcome === 'stop' : f === 'person' ? e.by === 'person' : true;
 

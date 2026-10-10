@@ -8,3 +8,4 @@ export { verifyLedger } from './audit.js';
 export { createSim, statusOf, traceOf, MAX_GUESTS, GUEST_PAD0 } from './sim.js';
 export { DRILLS, drillById, hostileAction, drillStoppable } from './redteam.js';
 export { HANDOFF_KEY, MAX_DOCKED, checkAgent, cleanText, parseHandoff, decodeHash, encodeHandoff, readHandoff, storedWith, storedWithout, toSpec, toContract, formatDate, SAMPLE_AGENT } from './handoff.js';
+export { MODEL_PAUSE_KEY, parseModelPause } from './models.js';

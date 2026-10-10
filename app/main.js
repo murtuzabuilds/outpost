@@ -1,7 +1,7 @@
 // Outpost: glue between the simulation, the 3D base and the panels.
 import { T, col, clamp, smooth, damp } from './gfx.js';
 import { createSim, CREW, byId, STATIONS, RISKY, SITE_KINDS, SITE_CREW, SITE_WORDS, makeAuthority, authorityId, trialAsync, verifyLedger,
-  HANDOFF_KEY, readHandoff, parseHandoff, toSpec, storedWith, storedWithout, SAMPLE_AGENT, MAX_GUESTS, GUEST_PAD0, drillById, drillStoppable } from '../src/index.js';
+  HANDOFF_KEY, readHandoff, parseHandoff, toSpec, storedWith, storedWithout, SAMPLE_AGENT, MAX_GUESTS, GUEST_PAD0, drillById, drillStoppable, MODEL_PAUSE_KEY, parseModelPause } from '../src/index.js';
 import { buildWorld } from './world3d.js';
 import { makeBot, makeParcel } from './bots.js';
 import { makeFx } from './fx.js';
@@ -283,6 +283,7 @@ export function boot(root = document, opts = {}) {
     const added = [];
     agents.forEach((x, k) => { const a = sim.addAgent(toSpec(x, o), { arrive: 2.8 + k * 0.6 }); if (a) added.push(byId[a.id].name); });
     if (!added.length) return [];
+    applyModelPause(pausedModels(), true);       // a bot that runs on a model paused in Umbra lands paused
     if (mode !== 'live') goLive();
     follow = null; fly = W.center('dock').clone().setY(3); dirty = true;
     say(`${names(added)} ${added.length > 1 ? 'are' : 'is'} docking from Umbra${o.sample ? ' (a sample handoff)' : ''}. ${added.length > 1 ? 'Each starts' : 'It starts'} Supervised, with the badge Umbra approved.`);
@@ -299,6 +300,21 @@ export function boot(root = document, opts = {}) {
   { const first = readDock(location.hash); if (first.length) pendingDock = first; }
   addEventListener('hashchange', () => { const n = readDock(location.hash); if (n.length) dockAll(n); });
   addEventListener('storage', e => { if (e.key !== HANDOFF_KEY || !e.newValue) return; const n = parseHandoff(e.newValue).agents.filter(x => !sim.state.agents.some(a => a.id === x.id)); if (n.length) dockAll(n); });
+  // ---------- models paused in Umbra ----------
+  // Umbra decides which models agents may run on. When a person pauses one there, every bot here that runs on it
+  // stops and its task goes back to the Inbox; when the model is resumed, they start again. Read on load, and live.
+  const pausedModels = () => { try { return parseModelPause(localStorage.getItem(MODEL_PAUSE_KEY)); } catch (e) { return []; } };
+  function applyModelPause(models, quiet) {
+    const r = sim.holdModels(models), nm = ids => names(ids.map(id => byId[id].name));
+    if (r.held.length || r.freed.length) dirty = true;
+    if (quiet) return r;
+    const hm = [...new Set(r.held.map(id => byId[id].model))], fm = [...new Set(r.freed.map(id => byId[id].model))];
+    if (r.held.length) say(`${names(hm)} ${hm.length > 1 ? 'were' : 'was'} paused in Umbra, so ${nm(r.held)} stopped. Their work went back to the Inbox for the rest of the crew.`);
+    else if (r.freed.length) say(`${names(fm)} ${fm.length > 1 ? 'were' : 'was'} resumed in Umbra. ${nm(r.freed)} can work again.`);
+    return r;
+  }
+  applyModelPause(pausedModels(), true);
+  addEventListener('storage', e => { if (e.key === MODEL_PAUSE_KEY) applyModelPause(parseModelPause(e.newValue || '')); });
   function dockSample() {
     if (sim.state.agents.some(a => a.id === SAMPLE_AGENT.id)) return select({ type: 'bot', id: SAMPLE_AGENT.id });
     if (sim.state.agents.filter(a => a.guest).length >= MAX_GUESTS) return say(`The dock has room for ${MAX_GUESTS} bots from Umbra. Undock one first.`);
