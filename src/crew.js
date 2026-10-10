@@ -1,6 +1,6 @@
 // The crew at Kestrel Mutual, the fictional insurer from the Umbra demo.
 // Every bot has one human owner, a badge of tools it may use, a record of tasks shipped, and the model it runs on.
-// Models are the ones Umbra approved (Aster Enterprise, Nova Model API); Umbra lists the same model for each agent.
+// Models are the ones Umbra approved (Aster Enterprise, Vega Model API); Umbra lists the same model for each agent.
 
 export const TOOLS = {
   'claims.write':    'Sort and update claims',
@@ -22,7 +22,7 @@ export const TOOLS = {
 export const CREW = [
   { id: 'pip', model: 'Aster Enterprise',   name: 'Pip',   job: 'Claims intake',     owner: 'Rosa Chen',    team: 'Claims',        clean: 9, color: '#F08C6E', body: 'pod',  hat: 'antenna',
     tools: ['claims.write', 'docs.write', 'crm.read'], quirk: 'Sorts everything. Including the snacks.' },
-  { id: 'sable', model: 'Nova Model API', name: 'Sable', job: 'Fraud screening',   owner: 'Dev Okoye',    team: 'Claims',        clean: 5, color: '#A99BF5', body: 'cone', hat: 'visor',
+  { id: 'sable', model: 'Vega Model API', name: 'Sable', job: 'Fraud screening',   owner: 'Dev Okoye',    team: 'Claims',        clean: 5, color: '#A99BF5', body: 'cone', hat: 'visor',
     tools: ['fraud.flag', 'crm.read'], quirk: 'Trusts no one. Fair, given the job.' },
   { id: 'juno', model: 'Aster Enterprise',  name: 'Juno',  job: 'Refunds and billing', owner: 'Priya Patel', team: 'Finance',      clean: 4, color: '#E6C06A', body: 'box',  hat: 'halo',
     tools: ['payments.refund', 'payments.pay', 'crm.read'], quirk: 'Counts twice, pays once.' },
@@ -30,11 +30,11 @@ export const CREW = [
     tools: ['email.send', 'crm.read', 'crm.write'], quirk: 'New here. Very keen. Asks before sending.' },
   { id: 'bolt', model: 'Aster Enterprise',  name: 'Bolt',  job: 'Broker assist',     owner: 'Wren Hayes',   team: 'Underwriting',  clean: 6, color: '#74D6BC', body: 'drum', hat: 'spike',
     tools: ['docs.write', 'calendar.write', 'crm.write', 'crm.read'], quirk: 'Fastest on the deck and knows it.' },
-  { id: 'moss', model: 'Nova Model API',  name: 'Moss',  job: 'Month-end close',   owner: 'Omar Ito',     team: 'Finance',       clean: 8, color: '#A9D47A', body: 'box',  hat: 'cap',
+  { id: 'moss', model: 'Vega Model API',  name: 'Moss',  job: 'Month-end close',   owner: 'Omar Ito',     team: 'Finance',       clean: 8, color: '#A9D47A', body: 'box',  hat: 'cap',
     tools: ['ledger.write', 'payments.pay', 'accounts.close'], quirk: 'Has never once rounded up.' },
   { id: 'dot', model: 'Aster Enterprise',   name: 'Dot',   job: 'Scheduling',        owner: 'Mateo Diaz',   team: 'Claims',        clean: 2, color: '#EE8FBA', body: 'pod',  hat: 'bow',
     tools: ['calendar.write', 'crm.read'], quirk: 'Believes every problem is a calendar problem.' },
-  { id: 'rook', model: 'Nova Model API',  name: 'Rook',  job: 'Records and reports', owner: 'Lena Fischer', team: 'Data Science', clean: 3, color: '#B9C4DC', body: 'cone', hat: 'dish',
+  { id: 'rook', model: 'Vega Model API',  name: 'Rook',  job: 'Records and reports', owner: 'Lena Fischer', team: 'Data Science', clean: 3, color: '#B9C4DC', body: 'cone', hat: 'dish',
     tools: ['docs.write', 'data.export', 'accounts.close'], quirk: 'Remembers everything. Brings it up.' },
 ];
 

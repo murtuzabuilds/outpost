@@ -189,7 +189,7 @@ test('a docked bot never shares a name with a crew member', () => {
 
 test('the model Umbra approved travels with a docked bot, and every crew bot runs on an approved model', async () => {
   const { CREW } = await import('../src/crew.js');
-  for (const c of CREW) assert.ok(['Aster Enterprise', 'Nova Model API'].includes(c.model), `${c.name} runs on an approved model`);
+  for (const c of CREW) assert.ok(['Aster Enterprise', 'Vega Model API'].includes(c.model), `${c.name} runs on an approved model`);
   const r = parseHandoff(JSON.stringify({ v: 1, agents: [{ id: 'umb-unknown-7f3', name: 'Fern', job: 'Drafts emails', owner: 'Gabe Lopez', team: 'Marketing', tools: ['email.send', 'crm.read'], limit: 0, approvedAt: '2026-10-09T10:00:00.000Z', source: 'umbra', umbraName: 'Agent 7f3', model: 'Aster Enterprise', rules: [] }] }));
   assert.equal(r.agents[0].model, 'Aster Enterprise');
   assert.equal(toSpec(r.agents[0]).model, 'Aster Enterprise');
