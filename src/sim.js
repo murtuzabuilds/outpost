@@ -103,11 +103,40 @@ export function createSim(seed = 7, opts = {}) {
     a.mood = 'go';
   }
 
+  // A bot that can take work: not paused by hand, not held by Umbra. One still flying in counts, since it lands soon.
+  const available = a => !a.paused && !a.modelHold;
+  const doable = tool => s.agents.some(a => available(a) && canUse(byId[a.id], tool));
+  // Why nobody can take work that needs `tool` right now, in one sentence, or null when someone can.
+  function blockedReason(tool) {
+    if (doable(tool)) return null;
+    const able = s.agents.filter(a => canUse(byId[a.id], tool));
+    if (!able.length) return `Waiting for a bot that can do ${tool}: nobody on the crew has it on their badge`;
+    const umbra = able.filter(a => a.modelHold), hand = able.filter(a => !a.modelHold);
+    const list = xs => { const n = xs.map(name); return n.length < 2 ? n[0] : n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1]; };
+    const parts = [];
+    if (umbra.length) parts.push(`${list(umbra)} ${umbra.length > 1 ? 'are' : 'is'} paused in Umbra`);
+    if (hand.length) parts.push(`${list(hand)} ${hand.length > 1 ? 'are' : 'is'} paused`);
+    return `Waiting for a bot that can do ${tool}: ${parts.join(', and ')}`;
+  }
+  // Tools some kind of work needs that no available bot can use right now.
+  const stranded = () => [...new Set(kinds.map(k => k.tool))].filter(t => !doable(t));
+
+  // o.front puts the task at the head of the Inbox, so the next capable bot takes it first (used for drills).
   function dispatch(kind, o = {}) {
+    let k = kind;
+    if (!k) {
+      // Only make up work that some available bot can do. If nobody can do anything, the base makes nothing.
+      const can = kinds.filter(x => doable(x.tool)).map(x => x.kind);
+      const busy = s.approvals.length + s.incidents.length >= 2;
+      let pool = can.length === kinds.length ? (busy ? calm : null) : busy ? calm.filter(x => can.includes(x)) : can;
+      if (pool && !pool.length) pool = can.length ? can : null;
+      if (o.auto && !can.length) return null;
+      k = pickKind(rnd, pool, kinds);
+    }
     s.seq++;
-    const k = kind || pickKind(rnd, s.approvals.length + s.incidents.length >= 2 ? calm : null, kinds);
     const task = makeTask(k, rnd, s.seq, o, kinds);
-    s.tasks[task.id] = task; s.queue.push(task.id);
+    s.tasks[task.id] = task;
+    if (o.front) s.queue.unshift(task.id); else s.queue.push(task.id);
     fx.push({ type: 'drop', task: task.id });
     log(task.from ? 'live' : 'in', `${task.id} arrived: ${task.title}`, null, task.id);
     return task;
@@ -116,6 +145,14 @@ export function createSim(seed = 7, opts = {}) {
   function assign() {
     for (let qi = 0; qi < s.queue.length; qi++) {
       const task = s.tasks[s.queue[qi]];
+      // Work nobody available can do stays in the Inbox, labelled, until a capable bot is back.
+      const why = blockedReason(task.tool);
+      if (why !== (task.waiting || null)) {
+        if (why) log('stuck', `${task.id} ${why.charAt(0).toLowerCase() + why.slice(1)}`, null, task.id);
+        else if (task.waiting) log('unstuck', `${task.id} can be taken again`, null, task.id);
+        task.waiting = why;
+      }
+      if (why) continue;
       const able = s.agents.filter(a => a.state === 'idle' && !a.paused && canUse(byId[a.id], task.tool));
       if (!able.length) continue;
       const a = able[Math.floor(rnd() * able.length)];
@@ -278,7 +315,29 @@ export function createSim(seed = 7, opts = {}) {
     return true;
   }
 
-  function pause(id) { const a = A(id); if (!a || a.paused) return false; a.paused = true; say(a, 'paused'); log('pause', `You paused ${name(a)}`, id); record({ agent: id, task: a.task, noAmount: true, tool: '-', outcome: 'paused', reason: `${name(a)} was paused by hand`, by: 'person' }); return true; }
+  // Takes a bot off whatever it was doing: its task goes back to the head of the Inbox, nothing it held is left
+  // waiting at the Gate or the Vault, and it flies home. Used by a hand pause and by a model paused in Umbra.
+  function release(a) {
+    const task = a.task && s.tasks[a.task];
+    const ai = s.approvals.indexOf(a.id); if (ai >= 0) s.approvals.splice(ai, 1);
+    s.incidents = s.incidents.filter(x => x.agent !== a.id);
+    if (task) { task.status = 'queued'; task.assignee = null; task.route = null; task.approval = null; task.approved = false; s.queue.unshift(task.id); a.task = null; }
+    if (a.state !== 'arrive' && a.state !== 'idle' && !(a.state === 'travel' && a.goal === 'home')) {
+      if (a.state === 'travel') a.at = a.p < 0.5 ? a.from : a.to;
+      go(a, 'dock', 'home');
+    }
+    if (a.state !== 'arrive') a.mood = 'paused';
+    return task;
+  }
+  function pause(id) {
+    const a = A(id); if (!a || a.paused) return false;
+    const tid = a.task;
+    a.paused = true;
+    const task = release(a); say(a, 'paused');
+    record({ agent: id, task: tid, noAmount: true, tool: '-', outcome: 'paused', reason: `${name(a)} was paused by hand${task ? `, so ${task.id} went back to the Inbox` : ''}`, by: 'person' });
+    log('pause', `You paused ${name(a)}${task ? `. ${task.id} is back in the Inbox` : ''}`, id, task ? task.id : null);
+    return true;
+  }
   function resume(id) { const a = A(id); if (!a || !a.paused || a.modelHold) return false; a.paused = false; say(a, 'resumed'); log('resume', `You resumed ${name(a)}`, id); record({ agent: id, task: a.task, noAmount: true, tool: '-', outcome: 'resumed', reason: `${name(a)} was resumed by hand`, by: 'person' }); return true; }
   function pauseWhere(prefix) {
     const hit = s.agents.filter(a => !a.paused && byId[a.id].tools.some(t => t.startsWith(prefix)));
@@ -293,13 +352,8 @@ export function createSim(seed = 7, opts = {}) {
     for (const a of s.agents) {
       const m = byId[a.id].model || '';
       if (off.has(m) && !a.modelHold) {
-        const task = a.task && s.tasks[a.task];
         a.modelHold = m; a.handPaused = a.paused; a.paused = true; held.push(a.id);
-        const ai = s.approvals.indexOf(a.id); if (ai >= 0) s.approvals.splice(ai, 1);
-        s.incidents = s.incidents.filter(x => x.agent !== a.id);
-        if (task) { task.status = 'queued'; task.assignee = null; task.route = null; task.approval = null; task.approved = false; s.queue.unshift(task.id); a.task = null; }
-        if (a.state !== 'arrive' && a.state !== 'idle') { if (a.state === 'travel') a.at = a.p < 0.5 ? a.from : a.to; go(a, 'dock', 'home'); }
-        if (a.state !== 'arrive') a.mood = 'paused';
+        const task = release(a);
         say(a, 'paused', 3);
         record({ agent: a.id, task: task ? task.id : null, tool: '-', noAmount: true, outcome: 'model paused', reason: `${m} was paused in Umbra${task ? `, so ${task.id} went back to the Inbox` : ''}`, by: 'umbra' });
         log('model', `${name(a)} stopped: ${m} was paused in Umbra${task ? `. ${task.id} is back in the Inbox` : ''}`, a.id, task ? task.id : null);
@@ -371,7 +425,7 @@ export function createSim(seed = 7, opts = {}) {
   function step(dt) {
     s.t += dt;
     if (s.auto && s.t >= s.nextSpawn) {
-      if (s.queue.length < 3) dispatch();
+      if (s.queue.filter(id => doable(s.tasks[id].tool)).length < 3) dispatch(null, { auto: true });
       s.nextSpawn = s.t + 3.2 + rnd() * 3;
     }
     assign();
@@ -387,7 +441,7 @@ export function createSim(seed = 7, opts = {}) {
   return {
     get state() { return s; }, fx, crew: CREW,
     get ledger() { return ledger; }, get steps() { return steps; },
-    step, dispatch, approve, sendBack, resolve, pause, resume, pauseWhere, resumeAll, holdModels, revoke, setAuthority, addAgent, removeAgent,
+    step, dispatch, approve, blockedReason, stranded, sendBack, resolve, pause, resume, pauseWhere, resumeAll, holdModels, revoke, setAuthority, addAgent, removeAgent,
     // The trace for one bot, as of `view` (the live state, or a snapshot when rewound).
     trace(id, view = s, limit) { return traceOf(view, ledger, steps, id, limit); },
     setAuto(v) { s.auto = !!v; },

@@ -119,6 +119,7 @@ button{cursor:pointer}
 .who{display:flex;flex-wrap:wrap;gap:5px}
 .who button{border:0;border-radius:999px;padding:2px 10px 3px;background:var(--c);color:var(--on-ice);font-weight:600;font-size:12.5px}
 .q{display:grid;gap:4px}.q div{font-size:12.5px;color:var(--ink-2)}.q code{font-family:var(--mono);font-size:11px;color:var(--ink);margin-right:6px}
+.q .qw{display:block;font-style:normal;font-size:11.5px;color:var(--ink-3);margin-top:1px}
 .acts{display:flex;flex-wrap:wrap;gap:7px}
 
 /* ---------- bots that joined from Umbra ---------- */
@@ -249,6 +250,10 @@ button{cursor:pointer}
 .tab{border:0;background:transparent;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:500;color:var(--ink-2);white-space:nowrap}
 .tab.on{background:var(--ink);color:var(--on-ice)}
 .app[data-list="1"] .radio,.app[data-list="1"] .coach,.app[data-list="1"] .alerts{display:none}
+/* The bot or station panel uses the right column down to the bottom bar; the coach card steps aside while it is open. */
+.app[data-ins] .coach{display:none}
+/* An answer makes the bottom bar taller; the ticker and the coach card step aside until it fades. */
+.app[data-say] .radio,.app[data-say] .coach{display:none}
 .tbl{display:grid;gap:4px;min-width:900px}
 .tr{display:grid;grid-template-columns:120px 150px minmax(200px,1fr) 100px 56px 66px 236px;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;font-size:13px}
 .tr.h{font:600 9.5px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);padding-block:2px}

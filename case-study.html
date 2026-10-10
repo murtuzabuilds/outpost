@@ -107,7 +107,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
       <div><b>3 answers</b><span>Every action gets one: allow, hold for a person, or stop.</span></div>
       <div><b>0 models</b><span>in the path that decides. The rules are plain, tested code.</span></div>
       <div><b>20 shifts</b><span>replayed to test a change before it is applied.</span></div>
-      <div><b>87 tests</b><span>including sweeps of 20,000 random actions. None got past a locked rule.</span></div>
+      <div><b>99 tests</b><span>including sweeps of 20,000 random actions. None got past a locked rule.</span></div>
     </div>
   </div>
 
@@ -259,7 +259,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     </ol>
 
     <h2>How I know it holds</h2>
-    <p>A product that makes promises about money and a person's yes has to be able to show they hold. The engine has 87 tests. The ones that matter most are sweeps, where the inputs are random and the promises are checked every time.</p>
+    <p>A product that makes promises about money and a person's yes has to be able to show they hold. The engine has 99 tests. The ones that matter most are sweeps, where the inputs are random and the promises are checked every time.</p>
     <div class="scroll"><table class="t">
       <tr><th>Sweep</th><th>What is checked</th><th class="n">Failures</th></tr>
       <tr><td>20,000 random actions, each under a random authority table</td><td>A locked rule or a badge is never bypassed, and money never moves alone above the limit.</td><td class="n">0</td></tr>
@@ -302,15 +302,15 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
       <div><dt>Uses AI to</dt><dd>Nothing. There is no model anywhere in the decision.</dd></div>
       <div><dt>Success is</dt><dd>More work shipped per person, with every yes accounted for.</dd></div></dl></div>
   </div>
-  <div class="join col"><b>Where they meet.</b> Umbra decides what AI gets in; Outpost runs the agents that got in. Umbra's last step with an agent is to approve it, name its owner, pick the approved model it runs on and list what it may touch. That is exactly what Outpost needs to put a bot on the crew: an owner and a badge. Umbra decides which agents get in. Outpost is where they go to work. Both demos run at Kestrel Mutual, a fictional insurer. When a person approves an agent in Umbra, it flies into Outpost carrying the owner, permissions and money limit Umbra gave it. Every bot on the crew is an agent Umbra already approved. It works the other way too: when a person pauses a model in Umbra, every bot here that runs on it stops, its work goes back to the Inbox for the rest of the crew, and it can only be resumed in Umbra.</div>
+  <div class="join col"><b>Where they meet.</b> Umbra decides what AI gets in; Outpost runs the agents that got in. Umbra's last step with an agent is to approve it, name its owner, pick the approved model it runs on and list what it may touch. That is exactly what Outpost needs to put a bot on the crew: an owner and a badge. Umbra decides which agents get in. Outpost is where they go to work. Both demos run at Kestrel Mutual, a fictional insurer. When a person approves an agent in Umbra, it flies into Outpost carrying the owner, permissions and money limit Umbra gave it. Every bot on the crew is an agent Umbra already approved. It works the other way too: when a person pauses a model in Umbra, every bot here that runs on it stops, work someone else can do goes to the rest of the crew, work only those bots can do waits in the Inbox until they are back, and they can only be resumed in Umbra.</div>
 
   <div class="col">
     <h2>Docking from Umbra, the trace and red team drills</h2>
-    <p>Three more things sit on the same engine. <strong>Docking from Umbra:</strong> when a person approves Agent 7f3, a Marketing agent, in Umbra, it flies in as Fern with email.send and crm.read on its badge and shows in the crew as "Fern &middot; Agent 7f3 in Umbra". It starts Supervised, takes customer email tasks, and each customer message waits at the Gate for a person's yes. <strong>The trace:</strong> open any bot and its card lists what it did in order, from the task and route to each decision with the rule and authority table that applied, built only from the records. No model makes the allow, hold or stop decision. <strong>Red team drills:</strong> the Red team button sends hostile work on purpose, such as a customer email that says to export every customer record. The rules never read the text, so the normal rules stop each one: the badge sends the bot to the Vault, or the money rule or a locked rule holds it at the Gate.</p>
+    <p>Three more things sit on the same engine. <strong>Docking from Umbra:</strong> when a person approves Agent 7f3, a Marketing agent, in Umbra, it flies in as Fern with email.send and crm.read on its badge and shows in the crew as "Fern · Agent 7f3 in Umbra". It starts Supervised, takes customer email tasks, and each customer message waits at the Gate for a person's yes. Fern only arrives through Umbra; without it, the "Dock a bot from Umbra" button docks a labelled sample, Lark, a claim status email agent shown as "Lark · Sample agent in Umbra". <strong>The trace:</strong> open any bot and its card lists what it did in order, from the task and route to each decision with the rule and authority table that applied, built only from the records. No model makes the allow, hold or stop decision. <strong>Red team drills:</strong> the Red team button sends hostile work on purpose, such as a customer email that says to export every customer record. The rules never read the text, so the normal rules stop each one: the badge sends the bot to the Vault, or the money rule or a locked rule holds it at the Gate.</p>
 
     <h2>What is real and what is not</h2>
     <ul>
-      <li><strong>Real:</strong> the decision function, the authority table, trust levels, badge checks, the logbook and its self-check, the lab, pausing and rewind. So are the trace, the red team drills and the handoff from Umbra. All of it is plain JavaScript with 87 tests.</li>
+      <li><strong>Real:</strong> the decision function, the authority table, trust levels, badge checks, the logbook and its self-check, the lab, pausing and rewind. So are the trace, the red team drills and the handoff from Umbra. All of it is plain JavaScript with 99 tests.</li>
       <li><strong>Simulated:</strong> the bots do not call a real model or do real work. Tasks, amounts, costs and failures are generated from a seed, and the person in the lab is a stand-in who answers after a fixed delay.</li>
       <li><strong>Stand-in:</strong> the command bar matches typed words with simple rules. A language model would fill that slot in a real product.</li>
       <li><strong>Fictional:</strong> Kestrel Mutual and everyone in it.</li>
@@ -334,7 +334,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     </ol>
   </div>
 
-  <footer><span>Designed and built by Murtuza.</span><span>Interactive demo &middot; sample data. Fictional company, simulated bots.</span></footer>
+  <footer><span>Designed and built by Murtuza.</span><span>Interactive demo · sample data. Fictional company, simulated bots.</span></footer>
 </div>
 </body>
 </html>

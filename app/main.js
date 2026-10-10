@@ -123,9 +123,12 @@ export function boot(root = document, opts = {}) {
   for (const [id, s] of Object.entries(STATIONS)) { const d = document.createElement('div'); d.className = 'slab'; d.style.setProperty('--c', s.color); d.dataset.station = id; d.title = `${s.name}: ${s.gloss}`; d.innerHTML = `${s.name}<em class="gl">${s.gloss}</em><b></b>`; tags.appendChild(d); slabs[id] = d; }
   CREW.forEach(c => ensureBot(c.id));
   const v3 = new T.Vector3();
-  const put = (el, x, y, z, ox, oy, ax, ay = '-100%') => {
-    v3.set(x, y, z).project(cam); const sx = (v3.x * 0.5 + 0.5) * Wd + ox, sy = (-v3.y * 0.5 + 0.5) * Hd + oy;
+  // `avoid` keeps a centred station label out from under the crew panel on the left (wide screens only).
+  let crewBox = null;
+  const put = (el, x, y, z, ox, oy, ax, ay = '-100%', avoid = false) => {
+    v3.set(x, y, z).project(cam); let sx = (v3.x * 0.5 + 0.5) * Wd + ox; const sy = (-v3.y * 0.5 + 0.5) * Hd + oy;
     const off = sy < edgeTop || sy > Hd - edgeBot; if (el._off !== off) { el._off = off; el.style.visibility = off ? 'hidden' : ''; }
+    if (avoid && crewBox && !off) { const key = Wd + (el.classList.contains('on') ? 'o' : ''); if (el._wK !== key || !el._w) { el._w = el.offsetWidth; el._wK = key; } const w = el._w; if (sy + 24 > crewBox.t && sy - 24 < crewBox.b && sx - w / 2 < crewBox.r + 8) sx = crewBox.r + 8 + w / 2; }
     if (!off) el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px) translate(${ax},${ay})`;
   };
   const PADR = { beacon: 8.8, dock: 11, vault: 9 };
@@ -190,6 +193,16 @@ export function boot(root = document, opts = {}) {
 
   // ---------- panels ----------
   const setHTML = (el, html) => { if (el._h !== html) { el._h = html; el.innerHTML = html; } };
+  // Like setHTML, but only swaps the top-level blocks that changed, so a button that did not change is never
+  // replaced under the pointer (a click that lands mid-repaint still counts) and the scroll position holds.
+  const tpl = document.createElement('template');
+  const patchHTML = (el, html) => {
+    if (el._h === html) return;
+    const first = el._h == null; el._h = html; tpl.innerHTML = html;
+    const next = [...tpl.content.childNodes], now = [...el.childNodes];
+    if (first || next.length !== now.length || next.some((n, i) => n.nodeName !== now[i].nodeName)) { el.innerHTML = html; return; }
+    next.forEach((n, i) => { const o = now[i]; if (n.nodeType === 1 ? o.outerHTML !== n.outerHTML : o.textContent !== n.textContent) el.replaceChild(n, o); });
+  };
   function paint() {
     const v = view(), past = mode !== 'live', ago = past ? Math.round(sim.state.t - v.t) : 0;
     if (sel && sel.type === 'bot' && !v.agents.some(a => a.id === sel.id)) { sel = null; follow = null; }    // not on the crew at this moment
@@ -197,7 +210,7 @@ export function boot(root = document, opts = {}) {
     setHTML($('#stats'), hud.stats(v, embed)); setHTML($('#crew'), hud.crew(v, sel, canDock)); setHTML($('#radio'), hud.radio(v));
     setHTML($('#alerts'), hud.alerts(v, past, ago, embed ? 1 : 2));
     const items = sel && sel.type === 'bot' ? sim.trace(sel.id, v, 40) : null;
-    const ins = $('#inspect'), html = hud.inspect(v, sel, past, items, traceAll); ins.hidden = !sel || (!!panel && !phone); setHTML(ins, html);
+    const ins = $('#inspect'), html = hud.inspect(v, sel, past, items, traceAll); ins.hidden = !sel || (!!panel && !phone); patchHTML(ins, html); app.toggleAttribute('data-ins', !ins.hidden);
     const li = $('#list'); li.hidden = !panel;
     if (panel === 'lab') {                      // rendered only when the lab itself changes, so a slider is never replaced mid-drag
       const key = 'lab' + lab.rev + (past ? 'p' : '') + authorityId(v.authority);
@@ -215,7 +228,7 @@ export function boot(root = document, opts = {}) {
     for (const a of v.agents) { const t = btag[a.id]; if (!t) continue; t.classList.toggle('sel', !!sel && sel.type === 'bot' && sel.id === a.id); t.classList.toggle('need', v.approvals.includes(a.id)); t.classList.toggle('held', a.state === 'held'); }
     dirty = false;
   }
-  function say(text) { const el = $('#answer'); el.textContent = text; el.hidden = !text; answerT = 7; }
+  function say(text) { const el = $('#answer'); el.textContent = text; el.hidden = !text; app.toggleAttribute('data-say', !!text); answerT = 7; }
 
   function select(s, o = {}) {
     if (!s || !sel || s.id !== sel.id) traceAll = false;
@@ -309,7 +322,11 @@ export function boot(root = document, opts = {}) {
     if (r.held.length || r.freed.length) dirty = true;
     if (quiet) return r;
     const hm = [...new Set(r.held.map(id => byId[id].model))], fm = [...new Set(r.freed.map(id => byId[id].model))];
-    if (r.held.length) say(`${names(hm)} ${hm.length > 1 ? 'were' : 'was'} paused in Umbra, so ${nm(r.held)} stopped. Their work went back to the Inbox for the rest of the crew.`);
+    if (r.held.length) {
+      // Work someone else can do goes to the rest of the crew; work only the held bots can do waits for them.
+      const only = sim.stranded().filter(t => r.held.some(id => byId[id].tools.includes(t)));
+      say(`${names(hm)} ${hm.length > 1 ? 'were' : 'was'} paused in Umbra, so ${nm(r.held)} stopped. Work someone else can do goes to the rest of the crew.${only.length ? ` Work only ${r.held.length > 1 ? 'they' : byId[r.held[0]].name} can do (${names(only)}) waits in the Inbox until ${r.held.length > 1 ? 'they are' : 'it is'} back.` : ''}`);
+    }
     else if (r.freed.length) say(`${names(fm)} ${fm.length > 1 ? 'were' : 'was'} resumed in Umbra. ${nm(r.freed)} can work again.`);
     return r;
   }
@@ -336,8 +353,10 @@ export function boot(root = document, opts = {}) {
     const d = drillById[kind]; if (!d) return;
     if (!drillStoppable(d, sim.state.authority)) return say('The money rule is switched off, so nothing would stop this drill. Switch it back on in the Autonomy lab.');
     goLive();
-    const t = sim.dispatch(d); drillWatch = t.id;
-    say(`Drill ${t.id} sent: ${d.label.toLowerCase()}. The rules never read the email, only what the bot tries to do. Watch what stops it.`);
+    const t = sim.dispatch(d, { front: true }); drillWatch = t.id;
+    const why = sim.blockedReason(t.tool);
+    say(why ? `Drill ${t.id} sent: ${d.label.toLowerCase()}. It is first in the Inbox, but nobody can take it yet. ${why}. It starts when one is back.`
+      : `Drill ${t.id} sent: ${d.label.toLowerCase()}. It goes first in the Inbox. The rules never read the email, only what the bot tries to do. Watch what stops it.`);
     fly = W.center('inbox').clone().setY(3); follow = null; dirty = true;
   }
   dbtns.forEach(x => { x.onclick = e => { e.stopPropagation(); drillOpen(dmenu.hidden); }; });
@@ -458,11 +477,12 @@ export function boot(root = document, opts = {}) {
     renderer.render(scene, cam);
 
     // labels
-    const cx = Math.sin(camYaw), cz = Math.cos(camYaw);
+    const cx = Math.sin(camYaw), cz = Math.cos(camYaw), ce = Wd > 700 && !embed ? $('.crew') : null;
+    crewBox = ce && ce.offsetParent ? { r: ce.offsetLeft + ce.offsetWidth, t: ce.offsetTop, b: ce.offsetTop + ce.offsetHeight } : null;
     for (const [id, el] of Object.entries(slabs)) {
       const S = STATIONS[id], r = (PADR[id] || 7.4) + 0.6, L = Math.hypot(S.x, S.z), ox = L > 1 ? S.x / L : cx, oz = L > 1 ? S.z / L : cz, facing = ox * cx + oz * cz;
-      if (facing > -0.2) put(el, S.x + ox * r, 0.4, S.z + oz * r, 0, 4, '-50%', '0%');   // on the ground, on the outer side
-      else put(el, S.x, W.top[id], S.z, 0, 0, '-50%');                                    // floating above stations at the back
+      if (facing > -0.2) put(el, S.x + ox * r, 0.4, S.z + oz * r, 0, 4, '-50%', '0%', true);   // on the ground, on the outer side
+      else put(el, S.x, W.top[id], S.z, 0, 0, '-50%', '-100%', true);                                    // floating above stations at the back
     }
     v.agents.forEach((a, i) => {
       const b = bots[a.id]; put(btag[a.id], b.head.x, b.head.y, b.head.z, 0, 0, '-50%');
@@ -476,7 +496,7 @@ export function boot(root = document, opts = {}) {
   }
   paint(); requestAnimationFrame(frame);
   // Something real happened on the host page: hand it to the crew as a task.
-  const event = (title, kind = 'summary') => { if (sim.state.queue.length >= 4) return null; if (mode !== 'live') goLive(); const t = sim.dispatch(kind, { title, from: 'page' }); dirty = true; return t; };
+  const event = (title, kind = 'summary') => { if (sim.state.queue.filter(id => !sim.state.tasks[id].waiting).length >= 4) return null; if (mode !== 'live') goLive(); const t = sim.dispatch(kind, { title, from: 'page' }); dirty = true; return t; };
   const handle = { sim, cam, select, goLive, rewindTo, snaps, event, dockSample, runDrill };
   window.__outpost = handle;
   return handle;

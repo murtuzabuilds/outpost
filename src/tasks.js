@@ -48,6 +48,6 @@ export function makeTask(kind, r, seq, opts = {}, kinds = KINDS) {
     risk: k.risk.slice(), amount, reach, why: k.why || null, from: opts.from || null,
     drill: k.drill || null, text: k.text || null,
     cost: Math.round((0.03 + r() * 0.3) * 100) / 100,
-    status: 'queued', assignee: null, approval: null, approved: false, reworked: false, route: null,
+    status: 'queued', assignee: null, approval: null, approved: false, reworked: false, route: null, waiting: null,
   };
 }

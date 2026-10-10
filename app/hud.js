@@ -104,7 +104,7 @@ function stationPanel(v, id) {
   const s = STATIONS[id];
   const here = v.agents.filter(a => (a.state !== 'travel' && a.at === id));
   let extra = '';
-  if (id === 'inbox') extra = `<div><small>Waiting for a bot</small><div class="q">${v.queue.length ? v.queue.map(t => `<div><code>${t}</code>${esc(v.tasks[t].title)}</div>`).join('') : '<div>Nothing waiting.</div>'}</div></div>`;
+  if (id === 'inbox') extra = `<div><small>Waiting for a bot</small><div class="q">${v.queue.length ? v.queue.map(t => `<div><code>${t}</code>${esc(v.tasks[t].title)}${v.tasks[t].waiting ? `<em class="qw">${esc(v.tasks[t].waiting)}</em>` : ''}</div>`).join('') : '<div>Nothing waiting.</div>'}</div></div>`;
   if (id === 'gate') extra = `<div><small>When a person has to say yes</small><ul class="rules">${rulesNow(v.authority).map(r => `<li>${r}</li>`).join('')}</ul></div><p>${v.stats.approved} approved, ${v.stats.sentBack} sent back.</p>`;
   if (id === 'vault') extra = `<div><small>Inside</small><ul class="rules">${WORDS.vault.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><p>Nobody on the crew holds a key. ${v.stats.blocked} kept out, ${v.stats.granted} let in once.</p>`;
   if (id === 'check') extra = `<p>Work that fails goes back to the Workshop and is checked again.</p>`;
@@ -219,8 +219,8 @@ export function ledger(entries, filter, v) {
   const answered = entries.filter(e => e.waited != null), wait = answered.length ? answered.reduce((t, e) => t + e.waited, 0) / answered.length : 0;
   const check = verifyLedger(entries), ok = !check.breaks.length;
   const shown = entries.filter(e => pass(e, filter)), rows = shown.slice(-80).reverse().map(e => {
-    const c = e.agent ? byId[e.agent] : null, what = e.title || e.reason || '';
-    return `<div class="lr o-${e.outcome.replace(/ /g, '-')}"><span class="num">${clock(e.t)}</span><span class="nm">${c ? av(c.color) + esc(c.name) : 'You'}</span><span class="do">${esc(what)}${e.tool ? `<em>${esc((WORDS.tools && WORDS.tools[e.tool]) || e.tool)}${e.amount != null ? ' \u00b7 ' + money(e.amount) : ''}</em>` : ''}</span><span><i class="oc">${OUT[e.outcome] || e.outcome}</i></span><span class="why">${e.title && e.reason ? esc(e.reason) : ''}${e.waited != null ? `<em>answered in ${f1(e.waited)} s</em>` : ''}</span><span class="by">${e.by === 'person' ? 'You' : e.by === 'umbra' ? 'Umbra' : 'Rules'}<em>${e.authority}</em></span></div>`;
+    const c = e.agent ? byId[e.agent] : null, lim = e.outcome === 'authority changed', what = e.title || (lim ? 'Changed what the crew may do alone' : e.reason || '');
+    return `<div class="lr o-${e.outcome.replace(/ /g, '-')}"><span class="num">${clock(e.t)}</span><span class="nm">${c ? av(c.color) + esc(c.name) : 'You'}</span><span class="do">${esc(what)}${e.tool ? `<em>${esc((WORDS.tools && WORDS.tools[e.tool]) || e.tool)}${e.amount != null ? ' \u00b7 ' + money(e.amount) : ''}</em>` : ''}</span><span><i class="oc">${OUT[e.outcome] || e.outcome}</i></span><span class="why">${(e.title || lim) && e.reason ? esc(e.reason) : ''}${e.waited != null ? `<em>answered in ${f1(e.waited)} s</em>` : ''}</span><span class="by">${e.by === 'person' ? 'You' : e.by === 'umbra' ? 'Umbra' : 'Rules'}<em>${e.authority}</em></span></div>`;
   }).join('');
   return `${head('ledger', 'Every decision on this shift, with the rule that fired and who made it.')}
   <div class="led-h">

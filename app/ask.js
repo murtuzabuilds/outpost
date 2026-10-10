@@ -26,12 +26,16 @@ export function ask(text, api) {
     const parts = []; if (w.length) parts.push(`${names(w)} ${w.length > 1 ? 'are' : 'is'} at the Gate`); if (i.length) parts.push(`${names(i.map(x => x.agent))} ${i.length > 1 ? 'are' : 'is'} stopped at the Vault`);
     return parts.join(', and ') + '.';
   }
+  if (/spen[dt]|cost|how much|bill\b|budget/.test(q) && !bot) {
+    const st = s.stats;
+    return `$${st.spend.toFixed(2)} in simulated model cost so far, for ${st.shipped} task${st.shipped === 1 ? '' : 's'} shipped. It is made-up demo money, not a real bill.`;
+  }
   if (/\b(resume|unpause|carry on|continue|wake)\b/.test(q)) {
     if (bot) { api.sim.resume(bot.id); api.select(bot.id); return `${bot.name} is back at work.`; }
     const ids = api.sim.resumeAll(); return ids.length ? `Resumed ${names(ids)}.` : 'Nobody was paused.';
   }
   if (/\b(pause|stop|hold|freeze|halt)\b/.test(q)) {
-    if (bot) { api.sim.pause(bot.id); api.select(bot.id); return `${bot.name} is paused. It stays where it is until you resume it.`; }
+    if (bot) { api.sim.pause(bot.id); api.select(bot.id); return `${bot.name} is paused. It flies home, and any task it had goes back to the Inbox until you resume it.`; }
     const area = AREAS.find(a => a.re.test(q));
     if (area) { const ids = api.sim.pauseWhere(area.prefix); return ids.length ? `Paused ${names(ids)}: every bot that can touch ${area.label}.` : `Every bot that can touch ${area.label} is already paused.`; }
     if (/all|every/.test(q)) { const ids = s.agents.map(a => a.id).filter(id => api.sim.pause(id)); return `Paused all ${ids.length} bots.`; }

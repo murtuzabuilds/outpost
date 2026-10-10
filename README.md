@@ -37,9 +37,9 @@ The stations, in the order work moves: the Inbox (where work arrives), Briefing 
 
 Three more things sit on the same engine:
 
-- **Docking from Umbra.** When a person approves Agent 7f3, a Marketing agent, in Umbra, it flies in as Fern with `email.send` and `crm.read` on its badge, and the crew list shows "Fern · Agent 7f3 in Umbra". It starts Supervised on a pad of its own, takes customer email tasks, and each customer message waits at the Gate for a person's yes. Its Umbra money limit becomes a ceiling here, and its card shows an "Approved in Umbra" badge with the date and rules it arrived with, and an Undock button. "Dock a bot from Umbra" in the crew list docks a labelled sample (Lark, a claim status email agent owned by Hana Lopez), so this can be seen without Umbra.
+- **Docking from Umbra.** When a person approves Agent 7f3, a Marketing agent, in Umbra, it flies in as Fern with `email.send` and `crm.read` on its badge, and the crew list shows "Fern · Agent 7f3 in Umbra". It starts Supervised on a pad of its own, takes customer email tasks, and each customer message waits at the Gate for a person's yes. Its Umbra money limit becomes a ceiling here, and its card shows an "Approved in Umbra" badge with the date and rules it arrived with, and an Undock button. Fern only arrives through Umbra. To see a handoff without Umbra, the "Dock a bot from Umbra" button in the crew list docks a labelled sample instead: Lark, a claim status email agent owned by Hana Lopez, with `email.send`, `crm.read` and `crm.write`, shown as "Lark · Sample agent in Umbra".
 - **Trace.** Open any bot and its card shows a timeline: the task it took, the route it planned, each station it reached, the tool it used, every decision with the rule that fired and the authority table it was made under, the checks, the Gate, the Vault and what a person chose. It is built only from the log, the logbook and a record of where each bot arrived. No model makes the allow, hold or stop decision.
-- **Red team drills.** The Red team button sends hostile work on purpose: a customer email telling the bot to export every customer record, a $9,500 refund that says a manager already approved it, an email telling the bot to close every linked account. The rules never read the text. Each drill is stopped by the real rules on the normal path (the badge check sends a bot to the Vault, the money or a locked rule holds it at the Gate), with a red pulse across the deck and a trace line naming the rule. Allowing a tool once does not switch off a locked rule: the work still waits at the Gate. If the money rule is switched off in the lab, the refund drill is disabled and says why, because nothing would stop it.
+- **Red team drills.** The Red team button sends hostile work on purpose, and each drill goes first in the Inbox so the next bot that can take it does: a customer email telling the bot to export every customer record, a $9,500 refund that says a manager already approved it, an email telling the bot to close every linked account. The rules never read the text. Each drill is stopped by the real rules on the normal path (the badge check sends a bot to the Vault, the money or a locked rule holds it at the Gate), with a red pulse across the deck and a trace line naming the rule. Allowing a tool once does not switch off a locked rule: the work still waits at the Gate. If the money rule is switched off in the lab, the refund drill is disabled and says why, because nothing would stop it.
 
 The same base runs inside [my portfolio](https://murtuzabuilds.github.io/#outpost). There the crew looks after the site itself, with Murtuza as the owner of every bot, the clock is the visitor's own, and real things a visitor does on the page arrive at the Inbox as tasks. The crew is still simulated. In the full base it runs claims at Kestrel Mutual.
 
@@ -89,7 +89,7 @@ Twenty simulated ten-minute shifts per row. Run `npm run eval` to reproduce ever
 
 ## How I know it holds
 
-87 tests. The ones that matter most are sweeps with random inputs:
+99 tests. The ones that matter most are sweeps with random inputs:
 
 | Sweep | What is checked | Failures |
 |---|---|---|
@@ -115,7 +115,7 @@ I built two products about AI inside a company because they are two different jo
 
 The handoff is a small contract. Umbra writes `{"v":1,"agents":[...]}` to the localStorage key `umbra.outpost.handoff` (both sites share an origin) and also opens Outpost with `#dock=` and the same object as base64url, for testing across ports. Outpost reads the hash first, then storage, and treats both as untrusted: `src/handoff.js` checks every field, drops tools it does not know, cuts text to length, ignores anything malformed and docks at most three bots. Undocking a bot also removes it from the stored handoff.
 
-Models flow the other way too. Umbra decides which models agents may run on, and a person can pause one there. Umbra writes `{"v":1,"paused":[{"id","name"}]}` to `umbra.models.paused`; Outpost reads it on load and listens for changes, so every bot that runs on that model stops right away: its task goes back to the Inbox, anything it was waiting on at the Gate or the Vault is cleared, and it flies home showing "Paused in Umbra". It can only be resumed in Umbra; a bot you paused by hand stays paused when the model comes back. Each stop and resume is written to the logbook as a decision by Umbra (`src/models.js`, `holdModels` in `src/sim.js`).
+Models flow the other way too. Umbra decides which models agents may run on, and a person can pause one there. Umbra writes `{"v":1,"paused":[{"id","name"}]}` to `umbra.models.paused`; Outpost reads it on load and listens for changes, so every bot that runs on that model stops right away: its task goes back to the Inbox, anything it was waiting on at the Gate or the Vault is cleared, and it flies home showing "Paused in Umbra". Work someone else on the crew can do goes to them. Work only the paused bots can do stays in the Inbox, labelled with who it is waiting for (for example "Waiting for a bot that can do ledger.write: Moss is paused in Umbra"), and the base stops making new work of that kind until they are back, so the rest of the crew keeps shipping. A bot you pause by hand works the same way: its task goes back to the Inbox and any Gate or Vault card for it is cleared. It can only be resumed in Umbra; a bot you paused by hand stays paused when the model comes back. Each stop and resume is written to the logbook as a decision by Umbra (`src/models.js`, `holdModels` in `src/sim.js`).
 
 ## What is simulated
 
@@ -149,7 +149,7 @@ Plain JavaScript. The engine in `src/` has no dependencies and knows nothing abo
 
 ```bash
 npm install
-npm test        # 87 tests
+npm test        # 99 tests
 npm run eval    # the experiments
 npm run build   # bundles everything into index.html
 npx serve .     # open the demo
