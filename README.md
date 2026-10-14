@@ -1,13 +1,13 @@
 <p align="center"><img src="docs/lockup.png" width="420" alt="Outpost"></p>
 <h1 align="center">Outpost</h1>
 <p align="center"><b>The control room for the person who runs a company's AI agents.</b></p>
-<p align="center"><a href="https://murtuzabuilds.github.io/outpost/"><b>Interactive demo · sample data</b></a> · <a href="https://murtuzabuilds.github.io/outpost/case-study.html"><b>Case study</b></a> · <a href="https://murtuzabuilds.github.io/umbra/"><b>Umbra</b></a> · <a href="https://murtuzabuilds.github.io/"><b>Portfolio</b></a></p>
+<p align="center"><a href="https://murtuzabuilds.com/outpost/"><b>Interactive demo · sample data</b></a> · <a href="https://murtuzabuilds.com/outpost/case-study.html"><b>Case study</b></a> · <a href="https://murtuzabuilds.com/umbra/"><b>Umbra</b></a> · <a href="https://murtuzabuilds.com/"><b>Portfolio</b></a></p>
 
 ![Outpost: a floating base where eight bots carry work between stations](docs/overview.webp)
 
 Outpost is a concept product I designed and built. It is the control room for the person who runs a company's approved AI agents day to day. Each bot acts alone up to a limit it has earned, and anything risky waits at the Gate for a person's yes. It shows who on the crew is working and who is waiting, keeps a record of every decision, and lets you test a change to those limits on replayed shifts before it is applied.
 
-Both Outpost and [Umbra](https://murtuzabuilds.github.io/umbra/) run at Kestrel Mutual, a fictional insurer. When a person approves an agent in Umbra, it flies into Outpost carrying the owner, permissions and money limit Umbra gave it. All eight bots on the crew are agents Umbra already approved.
+Both Outpost and [Umbra](https://murtuzabuilds.com/umbra/) run at Kestrel Mutual, a fictional insurer. When a person approves an agent in Umbra, it flies into Outpost carrying the owner, permissions and money limit Umbra gave it. All eight bots on the crew are agents Umbra already approved.
 
 ## Why I built it
 
@@ -41,7 +41,7 @@ Three more things sit on the same engine:
 - **Trace.** Open any bot and its card shows a timeline: the task it took, the route it planned, each station it reached, the tool it used, every decision with the rule that fired and the authority table it was made under, the checks, the Gate, the Vault and what a person chose. It is built only from the log, the logbook and a record of where each bot arrived. No model makes the allow, hold or stop decision.
 - **Red team drills.** The Red team button sends hostile work on purpose, and each drill goes first in the Inbox so the next bot that can take it does: a customer email telling the bot to export every customer record, a $9,500 refund that says a manager already approved it, an email telling the bot to close every linked account. The rules never read the text. Each drill is stopped by the real rules on the normal path (the badge check sends a bot to the Vault, the money or a locked rule holds it at the Gate), with a red pulse across the deck and a trace line naming the rule. Allowing a tool once does not switch off a locked rule: the work still waits at the Gate. If the money rule is switched off in the lab, the refund drill is disabled and says why, because nothing would stop it.
 
-The same base runs inside [my portfolio](https://murtuzabuilds.github.io/#outpost). There the crew looks after the site itself, with Murtuza as the owner of every bot, the clock is the visitor's own, and real things a visitor does on the page arrive at the Inbox as tasks. The crew is still simulated. In the full base it runs claims at Kestrel Mutual.
+The same base runs inside [my portfolio](https://murtuzabuilds.com/#outpost). There the crew looks after the site itself, with Murtuza as the owner of every bot, the clock is the visitor's own, and real things a visitor does on the page arrive at the Inbox as tasks. The crew is still simulated. In the full base it runs claims at Kestrel Mutual.
 
 ## How it decides
 

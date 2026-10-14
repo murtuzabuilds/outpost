@@ -92,7 +92,7 @@ test('the UI uses the shared words', () => {
   assert.ok(ui.includes('No model makes the allow, hold or stop decision.'));
   assert.ok(ui.includes('Trust grows with each task shipped'));
   assert.ok(ui.includes('Every bot here was approved in Umbra: owner, permissions and money limit.'));
-  for (const u of ['https://murtuzabuilds.github.io/umbra/', 'https://murtuzabuilds.github.io/', 'case-study.html']) assert.ok(ui.includes(u), u);
+  for (const u of ['https://murtuzabuilds.com/umbra/', 'https://murtuzabuilds.com/', 'case-study.html']) assert.ok(ui.includes(u), u);
   const words = ui + ['src/sim.js', 'src/world.js', 'src/redteam.js', 'src/handoff.js'].map(read).join('\n');
   const strings = words.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');     // code comments may use the engine's own terms
   for (const bad of [/needs a yes/i, /sign-off/i, /signature/i, /clean runs?\b/i, />\s*LIVE\s*</]) assert.ok(!bad.test(strings), `found ${bad}`);

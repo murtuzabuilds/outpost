@@ -40,8 +40,8 @@ fs.writeFileSync('index.html', `<!doctype html>
 <meta property="og:title" content="Outpost">
 <meta property="og:description" content="Outpost is the control room for the person who runs a company&#x27;s AI agents. Each bot acts alone up to a limit it has earned, and anything risky waits at the Gate for a person&#x27;s yes. Interactive demo, sample data.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://murtuzabuilds.github.io/outpost/">
-<meta property="og:image" content="https://murtuzabuilds.github.io/outpost/docs/og.png">
+<meta property="og:url" content="https://murtuzabuilds.com/outpost/">
+<meta property="og:image" content="https://murtuzabuilds.com/outpost/docs/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
