@@ -58,6 +58,7 @@ export function boot(root = document, opts = {}) {
         canvas.addEventListener('touchstart', e => { controls.enabled = e.touches.length > 1; if (controls.enabled) e.preventDefault(); }, { capture: true, passive: false });
         canvas.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { capture: true, passive: false });
         canvas.addEventListener('touchend', e => { if (e.touches.length < 2) controls.enabled = false; });
+        for (const g of ['gesturestart', 'gesturechange']) canvas.addEventListener(g, e => e.preventDefault(), { passive: false });   // Safari: a pinch here zooms the base, not the page
       } else controls.enableZoom = false;             // on a desktop the wheel scrolls the page; ctrl or cmd + wheel zooms
       canvas.addEventListener('wheel', e => { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12); }, { passive: false });
     }
