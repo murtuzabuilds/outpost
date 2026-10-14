@@ -49,10 +49,16 @@ export function boot(root = document, opts = {}) {
     controls.screenSpacePanning = false; controls.panSpeed = 1;
     controls.mouseButtons = { LEFT: T.MOUSE.PAN, MIDDLE: T.MOUSE.DOLLY, RIGHT: T.MOUSE.ROTATE };
     controls.touches = { ONE: T.TOUCH.PAN, TWO: T.TOUCH.DOLLY_ROTATE };
-    if (embed) {                                    // the host page keeps its scroll: no wheel zoom, and touch is for tapping only
-      controls.enableZoom = false;
-      if (matchMedia('(pointer: coarse)').matches) controls.enabled = false;
+    if (embed) {                                    // the host page keeps its scroll: one finger scrolls the page, two fingers move and zoom the base
       canvas.style.touchAction = 'pan-y';
+      if (matchMedia('(pointer: coarse)').matches) {
+        // The controls cancel scrolling on every touch, so they stay off until a second finger lands.
+        // Capture-phase listeners run before the controls' own, so one finger always scrolls the page or taps.
+        controls.touches = { ONE: -1, TWO: T.TOUCH.DOLLY_PAN }; controls.enableZoom = true; controls.enabled = false;
+        canvas.addEventListener('touchstart', e => { controls.enabled = e.touches.length > 1; if (controls.enabled) e.preventDefault(); }, { capture: true, passive: false });
+        canvas.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { capture: true, passive: false });
+        canvas.addEventListener('touchend', e => { if (e.touches.length < 2) controls.enabled = false; });
+      } else controls.enableZoom = false;             // on a desktop the wheel scrolls the page; ctrl or cmd + wheel zooms
       canvas.addEventListener('wheel', e => { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12); }, { passive: false });
     }
     controls.update();
@@ -406,6 +412,10 @@ export function boot(root = document, opts = {}) {
   $('#homeBtn').onclick = () => { follow = null; fly = null; if (controls) { const d = HOME.clone().sub(controls.target); shift(d); } cam.zoom = 1; cam.updateProjectionMatrix(); };
   $('#zoomIn').onclick = () => zoomBy(1.3); $('#zoomOut').onclick = () => zoomBy(1 / 1.3);
   $('#coachX').onclick = () => { $('#coach').hidden = true; };
+  if (matchMedia('(pointer: coarse)').matches) {                     // on a phone or tablet the tips speak touch
+    const b = $('#coach [data-c="bot"]'); if (b) b.lastChild.textContent = 'Tap a bot';
+    const g = $('#coach .coach-g'); if (g && embed) g.append(' Use two fingers to move and zoom the base.');
+  }
   $('#liveBtn').onclick = goLive;
   $('#scrub').oninput = e => { const i = +e.target.value; if (i >= snaps.length - 1) goLive(); else rewindTo(i); };
   addEventListener('keydown', e => {
