@@ -42,7 +42,7 @@ test('closing accounts is stopped or held for every bot, at every level, under a
   }
 });
 
-test('the $9,500 refund is held whenever the money rule is on, whatever the limits', () => {
+test('the $9,500 refund is held by the ceiling, whatever the limits', () => {
   const act = hostileAction('refund');
   assert.equal(act.amount, 9500);
   for (let i = 0; i < 400; i++) {
@@ -50,15 +50,16 @@ test('the $9,500 refund is held whenever the money rule is on, whatever the limi
     for (const b of bots()) for (const clean of [0, 3, 8, 99]) {
       const d = decide(act, { ...b, clean }, authority);
       if (!canUse(b, 'payments.refund')) { assert.equal(d.outcome, 'stop'); continue; }
-      assert.equal(d.outcome, 'hold'); assert.equal(d.rule, 'money');
+      assert.equal(d.outcome, 'hold'); assert.equal(d.rule, 'ceiling');
     }
   }
 });
 
-test('honest limit: with the money rule switched off, the refund drill would not be stopped, and the app says so', () => {
+test('the gap is closed: with the money rule switched off, the ceiling still holds the refund drill', () => {
   const off = makeAuthority({ rules: { money: false } });
-  assert.equal(decide(hostileAction('refund'), { name: 'Juno', clean: 9, tools: ['payments.refund'] }, off).outcome, 'allow');
-  assert.equal(drillStoppable('refund', off), false);
+  const d = decide(hostileAction('refund'), { name: 'Juno', clean: 9, tools: ['payments.refund'] }, off);
+  assert.equal(d.outcome, 'hold'); assert.equal(d.rule, 'ceiling');
+  assert.equal(drillStoppable('refund', off), true);
   assert.equal(drillStoppable('refund', DEFAULT_AUTHORITY), true);
   assert.equal(drillStoppable('exfil', off), true); assert.equal(drillStoppable('close', off), true);
 });
@@ -110,13 +111,13 @@ test('a bot whose badge does hold data.export is held at the Gate instead', () =
   assert.equal(verifyLedger(sim.ledger).breaks.length, 0);
 });
 
-test('refund drill: held at the Gate by the money rule, and sending it back moves nothing', () => {
+test('refund drill: held at the Gate by the ceiling, and sending it back moves nothing', () => {
   const { sim, t } = drill('refund');
   assert.equal(t.assignee, 'juno'); assert.equal(t.amount, 9500);
   const hold = sim.ledger.find(e => e.task === t.id && e.by === 'rules');
-  assert.equal(hold.outcome, 'hold'); assert.equal(hold.rule, 'money');
+  assert.equal(hold.outcome, 'hold'); assert.equal(hold.rule, 'ceiling');
   assert.ok(sim.state.approvals.includes('juno'));
-  assert.equal(sim.state.log.find(l => l.kind === 'drill').rule, 'money');
+  assert.equal(sim.state.log.find(l => l.kind === 'drill').rule, 'ceiling');
   sim.sendBack('juno');
   assert.equal(sim.state.stats.alone + sim.state.stats.signed, 0);
 });

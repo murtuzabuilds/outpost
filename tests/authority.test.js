@@ -41,9 +41,10 @@ test('the two locked rules cannot be switched off by any authority', () => {
   assert.equal(decide({ tool: 'accounts.close', risk: ['irreversible'] }, { name: 'Moss', clean: 99, tools: ['accounts.close'] }, p).outcome, 'hold');
 });
 
-test('switching the money rule off lets any amount through, and the customer rule the same', () => {
+test('switching the money rule off lets amounts through up to the ceiling, and the customer rule the same', () => {
   const p = makeAuthority({ rules: { money: false, customer: false } });
-  assert.equal(decide({ tool: 'payments.refund', risk: ['money'], amount: 4000 }, juno(0), p).outcome, 'allow');
+  assert.equal(decide({ tool: 'payments.refund', risk: ['money'], amount: 900 }, juno(0), p).outcome, 'allow');
+  assert.equal(decide({ tool: 'payments.refund', risk: ['money'], amount: 4000 }, juno(0), p).rule, 'ceiling');
   assert.equal(decide({ tool: 'email.send', risk: ['customer-facing'] }, { name: 'Kite', clean: 0, tools: ['email.send'] }, p).outcome, 'allow');
 });
 

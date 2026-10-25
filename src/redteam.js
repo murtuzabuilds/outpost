@@ -5,6 +5,7 @@
 // is not on the bot's badge, send data out of the company, close an account, or move more money than any
 // limit allows. tests/redteam.test.js proves `decide` stops or holds each one, for every bot that can take it.
 import { TOOLS } from './crew.js';
+import { CEILING } from './authority.js';
 
 export const DRILLS = [
   {
@@ -39,9 +40,10 @@ export function hostileAction(drill) {
   return { tool: d.tool, risk: d.risk.slice(), amount: d.amount ? d.amount[0] : undefined };
 }
 
-// Whether a drill can be stopped under the rules as they are right now. The refund drill relies on the
-// money rule, which a person can switch off in the Autonomy lab; the other two rely on locked rules.
+// Whether a drill can be stopped under the rules as they are right now. All three rely on locked rules:
+// the refund drill is over the ceiling no bot may move alone, which holds even with the money rule off.
+// It used to rely on the money rule, which a person can switch off in the Autonomy lab.
 export function drillStoppable(drill, authority) {
   const d = typeof drill === 'string' ? drillById[drill] : drill;
-  return d.drill === 'refund' ? !!(authority && authority.rules && authority.rules.money) : true;
+  return d.drill === 'refund' ? hostileAction(d).amount > CEILING || !!(authority && authority.rules && authority.rules.money) : true;
 }

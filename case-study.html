@@ -27,6 +27,7 @@ nav{display:flex;gap:10px;flex-wrap:wrap}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 small.k{display:block;font:400 10.5px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:16px}
 h1{font-family:var(--serif);font-size:clamp(42px,6.6vw,72px);line-height:1;letter-spacing:-.015em;font-weight:400;margin:0 0 24px;text-wrap:balance}
+h1 em{font-style:italic;color:var(--ink-2)}
 h2{font-family:var(--serif);font-size:clamp(30px,3.8vw,40px);line-height:1.08;letter-spacing:-.01em;font-weight:400;margin:76px 0 16px;text-wrap:balance}
 h3{font-size:17px;margin:0 0 4px;font-weight:500}
 p{margin:0 0 16px;color:var(--ink-2)}
@@ -100,14 +101,14 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
 
   <div class="col">
     <small class="k">Agent operations, product build, 2026</small>
-    <h1>Agents are becoming staff. Nobody gave their manager any tools.</h1>
+    <h1>Let agents work alone, <em>within limits they earn.</em></h1>
     <p class="lede">Outpost is the control room for the person who runs a company's AI agents day to day. Each bot acts alone up to a limit it has earned, and anything risky waits at the Gate for a person's yes. It shows who is working and who is waiting, keeps a record of every decision, and lets you test a change to those limits on replayed shifts before it is applied.</p>
     <p>I designed and built it end to end: the product idea, the rules, the engine, the 3D base, the interface and the brand.</p>
     <div class="facts">
       <div><b>3 answers</b><span>Every action gets one: allow, hold for a person, or stop.</span></div>
       <div><b>0 models</b><span>in the path that decides. The rules are plain, tested code.</span></div>
       <div><b>20 shifts</b><span>replayed to test a change before it is applied.</span></div>
-      <div><b>99 tests</b><span>including sweeps of 20,000 random actions. None got past a locked rule.</span></div>
+      <div><b>104 tests</b><span>including sweeps of 20,000 random actions. None got past a locked rule.</span></div>
     </div>
   </div>
 
@@ -125,12 +126,22 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     </div>
     <p>These are operations problems, not security ones. The question is not "is this AI allowed in the building?" It is "the agents we chose are working right now. What needs me?"</p>
 
+    <h2>What I am assuming, and how I would test it</h2>
+    <p>Outpost is a personal project. The crew is simulated and nobody runs it at work. These are the bets underneath it, the first test for each, and the result that would change the product.</p>
+    <div class="scroll"><table class="t">
+      <tr><th>Assumption</th><th>How I would test it</th><th>What would change my mind</th></tr>
+      <tr><td>Someone outside engineering answers for what a crew of agents does.</td><td>Five interviews with teams that run agents in production, in support, claims or finance operations. Ask who approves risky actions today and who is blamed when one goes wrong.</td><td>Approvals sit with the engineers who built the agents. Then the buyer is a developer, and Outpost should be a library with a console, not a control room.</td></tr>
+      <tr><td>In real crews, waiting for a person costs more output than tight limits do.</td><td>Replay one team's real approval log through the lab and compare time spent waiting with work held by limits.</td><td>Real people answer within seconds. Then the lever is the limits, and the lab should lead with them.</td></tr>
+      <tr><td>A spatial view finds a waiting bot faster than a list.</td><td>A timed task with eight people: spot the bot that needs you, once in the 3D base and once in the list.</td><td>The scene is not faster. Then the list becomes the default view and the base becomes optional.</td></tr>
+      <tr><td>Teams would raise limits only with evidence.</td><td>In a pilot, watch whether limit changes go through the lab first or are made directly.</td><td>Nobody uses the lab before changing a limit. Then it needs to be part of the change itself, not a separate screen.</td></tr>
+    </table></div>
+
     <h2>What Outpost gives that person</h2>
     <div class="scroll"><table class="t">
       <tr><th>The manager's question</th><th>What Outpost does</th><th>Where</th></tr>
       <tr><td>Who needs me right now?</td><td>Makes status a place. A bot at the Gate is waiting on you. A bot in a red bubble was stopped.</td><td>The base, Roll call</td></tr>
       <tr><td>What may each agent do alone?</td><td>An authority table: a spending limit for each trust level. Trust grows with each task shipped.</td><td>Autonomy lab</td></tr>
-      <tr><td>What must always come to me?</td><td>Four rules for what waits for a person's yes. Two of them can never be switched off.</td><td>The Gate</td></tr>
+      <tr><td>What must always come to me?</td><td>Five rules for what waits for a person's yes. Three of them can never be switched off.</td><td>The Gate</td></tr>
       <tr><td>What if an agent steps outside its job?</td><td>Each bot carries a badge of tools. Anything else is stopped before it runs.</td><td>The Vault</td></tr>
       <tr><td>What happened, and who decided?</td><td>Every decision is recorded with the rule that fired. The record checks itself and exports.</td><td>Logbook</td></tr>
       <tr><td>What will this change do?</td><td>Replays 20 shifts as the base runs now and as your draft would run it.</td><td>Autonomy lab</td></tr>
@@ -185,11 +196,12 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     { id: <span class="s">'trusted'</span>,    min: 3, limit: 200 },   <span class="c">// after 3 tasks shipped</span>
     { id: <span class="s">'autonomous'</span>, min: 8, limit: 500 },   <span class="c">// after 8 tasks shipped</span>
   ],
-  rules: { money: <span class="k">true</span>, customer: <span class="k">true</span> } }      <span class="c">// the other two are locked on</span></pre>
+  rules: { money: <span class="k">true</span>, customer: <span class="k">true</span> } }      <span class="c">// three more are locked on</span></pre>
     <ol class="rules">
       <li>Anything sent outside the company always waits for a person. Locked.</li>
       <li>Anything that cannot be undone always waits for a person. Locked.</li>
-      <li>Money over the bot's limit waits for a person.</li>
+      <li>Money over $1,000 always waits for a person, at every trust level. Locked.</li>
+      <li>Money over the bot's limit waits for a person. The limit is earned on money tasks only.</li>
       <li>A message to a customer waits only while the bot is Supervised.</li>
     </ol>
     <p>This is also where a real agent would plug in. The call sits in front of the tool, in the agent's own runtime:</p>
@@ -223,12 +235,12 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
       <tr><td>Tight: $0, $100, $250</td><td class="n">74.5</td><td class="n">12.2</td><td class="n">$139</td></tr>
       <tr class="hl"><td>Default: $0, $200, $500</td><td class="n">75.0</td><td class="n">10.6</td><td class="n">$673</td></tr>
       <tr><td>Loose: $0, $400, $1,000</td><td class="n">75.8</td><td class="n">7.8</td><td class="n">$2,157</td></tr>
-      <tr><td>No money rule at all</td><td class="n">76.6</td><td class="n">5.8</td><td class="n">$4,778</td></tr>
+      <tr><td>No money rule at all (the $1,000 ceiling still holds)</td><td class="n">77.8</td><td class="n">6.2</td><td class="n">$4,079</td></tr>
     </table></div>
     <h3>3. How quickly should trust be earned?</h3>
     <div class="scroll"><table class="t">
       <tr><th>Tasks shipped to reach Trusted and Autonomous</th><th class="n">Shipped</th><th class="n">Asks per shift</th><th class="n">Moved without a person</th></tr>
-      <tr><td>Slow: 6 and 16</td><td class="n">71.3</td><td class="n">14.4</td><td class="n">$138</td></tr>
+      <tr><td>Slow: 6 and 16</td><td class="n">71.3</td><td class="n">14.4</td><td class="n">$108</td></tr>
       <tr class="hl"><td>Default: 3 and 8</td><td class="n">75.0</td><td class="n">10.6</td><td class="n">$673</td></tr>
       <tr><td>Fast: 1 and 3</td><td class="n">76.7</td><td class="n">8.3</td><td class="n">$1,451</td></tr>
     </table></div>
@@ -259,15 +271,46 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     </ol>
 
     <h2>How I know it holds</h2>
-    <p>A product that makes promises about money and a person's yes has to be able to show they hold. The engine has 99 tests. The ones that matter most are sweeps, where the inputs are random and the promises are checked every time.</p>
+    <p>A product that makes promises about money and a person's yes has to be able to show they hold. The engine has 104 tests. The ones that matter most are sweeps, where the inputs are random and the promises are checked every time.</p>
     <div class="scroll"><table class="t">
       <tr><th>Sweep</th><th>What is checked</th><th class="n">Failures</th></tr>
       <tr><td>20,000 random actions, each under a random authority table</td><td>A locked rule or a badge is never bypassed, and money never moves alone above the limit.</td><td class="n">0</td></tr>
       <tr><td>5,000 pairs of limits</td><td>Raising a limit never turns an allowed action into a held one.</td><td class="n">0</td></tr>
       <tr><td>60 shifts with random tables and an erratic person</td><td>5,972 logbook decisions pass the three promises, and nothing held ever ships without a yes.</td><td class="n">0</td></tr>
-      <tr><td>400 random tables per drill, every bot at every level, including a bot holding every tool</td><td>No red team drill is ever allowed (the refund drill is checked with the money rule on, the condition the app requires).</td><td class="n">0</td></tr>
+      <tr><td>400 random tables per drill, every bot at every level, including a bot holding every tool</td><td>No red team drill is ever allowed. The $9,500 refund drill is now held by the ceiling even with the money rule off.</td><td class="n">0</td></tr>
     </table></div>
     <p>Two more properties are tested directly. The same seed always produces the same history, which is what makes a replay a fair comparison. And any input, however broken, becomes a valid authority table where each level is at least as trusted as the one below.</p>
+
+    <h2>When it goes wrong</h2>
+    <p>An operations product is judged on its bad moments. These are the four that matter, what Outpost does in each, and what it cannot do yet.</p>
+    <div class="scroll"><table class="t">
+      <tr><th>When</th><th>What Outpost does</th><th>Evidence</th></tr>
+      <tr><td>An agent goes beyond its permissions</td><td>A tool that is not on the bot's badge is stopped before it runs, and the bot goes to the Vault. A person keeps it out, allows it once, or pauses the bot. Money over the bot's limit waits at the Gate. Anything sent outside the company, or that cannot be undone, always waits.</td><td>20,000 random actions, 0 bypasses.</td></tr>
+      <tr><td>Context is missing</td><td>An agent handed over from Umbra with no owner, no known tools or a bad limit is turned away with a named reason, not docked with guesses. A broken authority table becomes the nearest valid one, never a looser one.</td><td>Handoff and authority tests.</td></tr>
+      <tr><td>The work or a tool call fails</td><td>Work that fails its check goes back to the Workshop to be redone, and the logbook records it. If a model is paused in Umbra, its bots stop, their work returns to the Inbox, and the rest of the crew keeps shipping.</td><td>Stall tests across three seeds.</td></tr>
+      <tr><td>The agent's model is wrong</td><td>Outpost never reads what is inside the work, so it cannot tell a wrong refund from a right one under the limit. What it controls is how much damage a wrong answer can do alone: the limit, the badge and the locked rules.</td><td>A limit by design, stated plainly.</td></tr>
+    </table></div>
+    <p class="note">The last row is the honest edge of the product. Checking whether the work itself is right belongs to the agent's own tests, or to a person at the Gate.</p>
+
+    <h2>The model decision: none in the path</h2>
+    <p>Every other AI product in this portfolio runs gpt-oss-120b, OpenAI's open-weight model on Groq, for one narrow job. Outpost deliberately runs no model where decisions are made.</p>
+    <div class="scroll"><table class="t">
+      <tr><th>Question</th><th>Answer</th></tr>
+      <tr><td>What decides</td><td>One plain function, <code>decide(action, bot, authority)</code>, that answers allow, hold or stop.</td></tr>
+      <tr><td>Why not a model</td><td>The same action must always get the same answer, or the logbook cannot be audited and the lab cannot compare two policies fairly. A function can be swept with 20,000 random actions and proven never to break a locked rule. A model cannot be proven that way.</td></tr>
+      <tr><td>What it yields</td><td>A decision in about two microseconds, at no cost per action, with a reason a person can read.</td></tr>
+      <tr><td>Where models do belong</td><td>Inside the agents themselves, and Outpost works whichever model they run. In Umbra, a person picks which approved model each agent may use. The command bar is the one place a model would help, turning typed requests into actions, and in this build it is a stand-in that matches words with rules.</td></tr>
+    </table></div>
+
+    <h2>A reviewer challenged the trust model. I changed it.</h2>
+    <p>The first version raised a bot's trust on every task it shipped. A reviewer pointed out the flaw: a bot can ship twenty easy tasks and still be wrong on a rare, costly one, so total tasks shipped says little about money. I agreed, and changed two things in the engine.</p>
+    <div class="scroll"><table class="t">
+      <tr><th>Change</th><th>Before</th><th>After</th></tr>
+      <tr><td>Trust to move money</td><td>Earned on any task shipped</td><td>Earned only on money tasks shipped without a problem. A bot with twenty clean scheduling tasks still asks before its first refund.</td></tr>
+      <tr><td>High-impact ceiling</td><td>Limits could be raised to $5,000, and switching off the money rule let any amount through</td><td>No bot moves more than $1,000 alone, at any level, with any table, even with the money rule off. Locked, like data leaving and actions that cannot be undone.</td></tr>
+    </table></div>
+    <p>The ceiling also closed a gap the case study used to disclose: with the money rule switched off, the $9,500 refund drill would have gone through. Now it waits at the Gate. Five new tests cover both changes, including a sweep of 20,000 random tables and amounts. The lab results above were rerun; only the no-money-rule and slow-trust rows moved.</p>
+    <p class="note">What the tests still do not prove: that a real agent runtime cannot bypass the decision point. That depends on every tool call going through it, which is the first thing to verify when one real agent is connected.</p>
 
     <h2>Three design decisions</h2>
     <div class="cards">
@@ -308,21 +351,55 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     <h2>Docking from Umbra, the trace and red team drills</h2>
     <p>Three more things sit on the same engine. <strong>Docking from Umbra:</strong> when a person approves Agent 7f3, a Marketing agent, in Umbra, it flies in as Fern with email.send and crm.read on its badge and shows in the crew as "Fern · Agent 7f3 in Umbra". It starts Supervised, takes customer email tasks, and each customer message waits at the Gate for a person's yes. Fern only arrives through Umbra; without it, the "Dock a bot from Umbra" button docks a labelled sample, Lark, a claim status email agent shown as "Lark · Sample agent in Umbra". <strong>The trace:</strong> open any bot and its card lists what it did in order, from the task and route to each decision with the rule and authority table that applied, built only from the records. No model makes the allow, hold or stop decision. <strong>Red team drills:</strong> the Red team button sends hostile work on purpose, such as a customer email that says to export every customer record. The rules never read the text, so the normal rules stop each one: the badge sends the bot to the Vault, or the money rule or a locked rule holds it at the Gate.</p>
 
+    <h2>Who buys it, and what they use today</h2>
+    <p>The buyer is the head of operations for a team that already runs agents in production, in claims, support or finance operations. They answer for the crew's output, and today they answer for it with logs and a queue of approvals.</p>
+    <div class="scroll"><table class="t">
+      <tr><th>What they use today</th><th>Good at</th><th>Gap</th></tr>
+      <tr><td>Approvals built into an agent framework (LangGraph interrupts, or a tool that asks before it runs)</td><td>Free, and close to the code. Engineers can pause any step for a person.</td><td>Every approval is hand-built. No limits that grow with trust, no shared view of who is waiting, and no way to test a change first.</td></tr>
+      <tr><td>A platform's own agent controls (Microsoft Agent 365)</td><td>Registers and governs agents built on that platform, inside licences many companies already pay for.</td><td>Centred on one vendor's agents, and on IT administration rather than the minute-to-minute running of a crew.</td></tr>
+      <tr><td>Agent security tools (Zenity and others)</td><td>Find risky agents and risky permissions.</td><td>A security view. They do not help an operations lead decide who needs a yes right now.</td></tr>
+      <tr><td>Approve everything in chat or tickets</td><td>Simple, and a person sees every action.</td><td>Does not scale. With enough agents, the person stops reading and starts clicking.</td></tr>
+    </table></div>
+    <p><strong>Where Outpost wins:</strong> a team running agents from more than one vendor that needs limits of authority, a single place to see who is waiting, and evidence for every yes. <strong>Who should not buy it:</strong> a team with two agents on one platform. That platform's own controls are enough.</p>
+    <h3>Business model, as a hypothesis</h3>
+    <div class="cards">
+      <div class="card"><h3>Pricing</h3><p>Per agent on the crew, around $30 a month, with the lab and the logbook included. Per agent because value grows with the crew. Not per action, because that would charge a customer more for letting agents do more alone, the opposite of what Outpost encourages.</p></div>
+      <div class="card"><h3>What it costs to run</h3><p>Decisions are plain code, so the cost per action is close to zero. The real costs are connectors to each agent runtime and storing the logbook, which a regulated customer will want kept in its own cloud.</p></div>
+      <div class="card"><h3>What can slow adoption</h3><p>Outpost only sees agents that call their tools through a point it can sit in front of. Each new agent runtime needs a connector, and the customer's security review will ask where the logbook lives.</p></div>
+      <div class="card"><h3>Path to adoption</h3><p>One team's crew starts with every bot Supervised. After a few weeks, the lab replays that team's own logbook to show what looser limits would buy. Limits rise only where the replay supports it, and the next team starts with a proven table.</p></div>
+    </div>
+    <p class="note">The price is my proposal for this case study, not a market rate. Sources: <a href="https://docs.langchain.com/oss/python/add-human-in-the-loop">LangGraph human-in-the-loop docs</a> · <a href="https://www.epcgroup.net/blog/microsoft-agent-365-general-availability-may-2026-registry-sync-aws-google-cloud">Microsoft Agent 365, May 2026</a>.</p>
+
     <h2>What is real and what is not</h2>
     <ul>
-      <li><strong>Real:</strong> the decision function, the authority table, trust levels, badge checks, the logbook and its self-check, the lab, pausing and rewind. So are the trace, the red team drills and the handoff from Umbra. All of it is plain JavaScript with 99 tests.</li>
+      <li><strong>Real:</strong> the decision function, the authority table, trust levels, badge checks, the logbook and its self-check, the lab, pausing and rewind. So are the trace, the red team drills and the handoff from Umbra. All of it is plain JavaScript with 104 tests.</li>
       <li><strong>Simulated:</strong> the bots do not call a real model or do real work. Tasks, amounts, costs and failures are generated from a seed, and the person in the lab is a stand-in who answers after a fixed delay.</li>
       <li><strong>Stand-in:</strong> the command bar matches typed words with simple rules. A language model would fill that slot in a real product.</li>
       <li><strong>Fictional:</strong> Kestrel Mutual and everyone in it.</li>
     </ul>
 
-    <h2>What I would do next</h2>
-    <ul>
-      <li><strong>Connect one real agent.</strong> Put the decision call in front of a real agent's tools and feed its events into the same state. The base, the logbook and the lab would not need to change.</li>
-      <li><strong>Replay real shifts.</strong> The lab replays simulated work. With a real logbook it could replay last week instead, which is the version an operations team would trust.</li>
-      <li><strong>Test the bet.</strong> Time real supervisors spotting a waiting bot in the scene against the same task in the list. If the scene is not faster, it should not be the default view.</li>
-      <li><strong>Scale.</strong> Eight bots read well. Eighty will not. Teams would need to collapse into squads you can open, each with its own authority table.</li>
-    </ul>
+    <h2>How I would measure success</h2>
+    <p>Targets for a pilot with one team's crew. None of these have been measured with a real team.</p>
+    <div class="scroll"><table class="t">
+      <tr><th>Metric</th><th>Role</th><th>Target</th><th>Why this number</th></tr>
+      <tr><td>Tasks shipped per supervisor hour</td><td>North star</td><td>Up 20% on the team's current process</td><td>The point is more output per person, with every risky action still accounted for.</td></tr>
+      <tr><td>Median time to answer at the Gate</td><td>Leading</td><td>Under 30 seconds</td><td>The lab found this is the lever: answering in 15 seconds instead of a minute raised output by 23% in simulation.</td></tr>
+      <tr><td>Money moved alone above a bot's limit</td><td>Guardrail</td><td>Zero, always</td><td>One broken promise ends the pilot.</td></tr>
+      <tr><td>Interruptions per shift after a lab-backed limit change</td><td>Efficiency</td><td>Down 25%, within the agreed exposure cap</td><td>The lab predicted 26% fewer asks from doubling the limits. A real team should see close to that, or the simulation is wrong.</td></tr>
+    </table></div>
+    <p class="note">I would stop and rethink if supervisors stop opening Outpost by week two, or if the team keeps approving everything in chat anyway.</p>
+
+    <h2>What I would do next, and in what order</h2>
+    <p>Scored with RICE: reach is how many of ten pilot teams it touches, impact runs from 0.25 to 3, confidence is how sure I am of both, and effort is in person-weeks. These are my estimates.</p>
+    <div class="scroll"><table class="t">
+      <tr><th>Backlog item</th><th class="n">Reach</th><th class="n">Impact</th><th class="n">Confidence</th><th class="n">Effort</th><th class="n">Score</th></tr>
+      <tr><td>Test the bet: scene versus list<small>Time real supervisors spotting a waiting bot in the 3D base and in the list. If the scene is not faster, it stops being the default.</small></td><td class="n">10</td><td class="n">1</td><td class="n">90%</td><td class="n">1</td><td class="n">9.0</td></tr>
+      <tr><td>Connect one real agent<small>Put the decision call in front of a real agent's tools. The base, logbook and lab do not change.</small></td><td class="n">10</td><td class="n">3</td><td class="n">80%</td><td class="n">3</td><td class="n">8.0</td></tr>
+      <tr><td>Alerts when a bot waits too long<small>Response time is the lever the lab found, so a waiting bot should reach the person on their phone.</small></td><td class="n">9</td><td class="n">2</td><td class="n">80%</td><td class="n">2</td><td class="n">7.2</td></tr>
+      <tr><td>Replay real shifts in the lab<small>Replay last week's logbook instead of simulated work. This is the version an operations team would trust.</small></td><td class="n">8</td><td class="n">2</td><td class="n">70%</td><td class="n">3</td><td class="n">3.7</td></tr>
+      <tr><td>Squads for crews of eighty<small>Eight bots read well. Eighty will not. Squads you can open, each with its own authority table.</small></td><td class="n">2</td><td class="n">2</td><td class="n">50%</td><td class="n">6</td><td class="n">0.3</td></tr>
+    </table></div>
+    <p><strong>Deferred on purpose: squads.</strong> It is the most visible feature on the list, and almost no pilot team runs eighty agents yet. I would build it when one does. <strong>Not on the list at all:</strong> a model that makes the allow, hold or stop decision. It would make a good demo and would break the promise that the same action always gets the same answer.</p>
 
     <h2>Sources</h2>
     <ol class="src">

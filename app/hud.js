@@ -21,7 +21,7 @@ const home = () => !Object.keys(META).length;
 export const UMBRA_LINE = 'Every bot here was approved in Umbra: owner, permissions and money limit.';
 // A bot that docked from Umbra is shown with the name Umbra knows it by, e.g. "Fern · Agent 7f3 in Umbra".
 const dockedAs = (c, plain) => !c || !c.umbra ? '' : (plain ? ' &middot; ' : '<small class="un"> &middot; ') + (c.umbra.umbraName && c.umbra.umbraName !== c.name ? `${esc(c.umbra.umbraName)} in Umbra` : 'approved in Umbra') + (plain ? '' : '</small>');
-const limitFor = (a, v) => limitOf({ clean: a.clean, cap: byId[a.id].cap }, v.authority);
+const limitFor = (a, v) => limitOf({ clean: a.clean, cleanMoney: a.cleanMoney, cap: byId[a.id].cap }, v.authority);
 
 export function stats(v, sim) {
   const working = v.agents.filter(a => a.task).length, need = v.approvals.length + v.incidents.length;
@@ -73,7 +73,7 @@ function botPanel(v, id, past, items, all) {
   const a = v.agents.find(x => x.id === id), c = who(id), task = a.task && v.tasks[a.task], lv = levelOf(a.clean, v.authority), nx = nextLevel(a.clean, v.authority), li = v.authority.levels.indexOf(lv);
   const route = task && task.route ? `<ol class="route">${task.route.map((s, i) => `<li class="${i < a.step ? 'done' : i === a.step ? 'cur' : ''} ${s === 'gate' ? 'g' : ''}">${NAMES[s]}</li>`).join('')}</ol>` : '';
   const lim = limitFor(a, v), capped = c.cap != null && lim < lv.limit;
-  const limit = !v.authority.rules.money ? 'No money limit: the money rule is switched off.' : lim ? `Moves up to ${money(lim)} without asking${capped ? ', the ceiling Umbra set' : ''}.` : lv.id === 'supervised' && v.authority.rules.customer ? 'Asks before moving any money or messaging a customer.' : 'Asks before moving any money.';
+  const limit = !v.authority.rules.money ? 'Money rule switched off: moves up to the $1,000 ceiling without asking.' : lim ? `Moves up to ${money(lim)} without asking${capped ? ', the ceiling Umbra set' : ''}.` : lv.id === 'supervised' && v.authority.rules.customer ? 'Asks before moving any money or messaging a customer.' : 'Asks before moving any money.';
   const u = c.umbra, umb = u ? `<div class="umb"><div class="umb-h">${umbraChip(c)}<span>${esc(u.approvedOn)}</span></div>
     <span class="umb-n">Named "${esc(u.umbraName)}" in Umbra. ${c.model ? `Runs on ${esc(c.model)}, an approved model. ` : ''}Money ceiling set there: ${money(u.limit)}.</span>
     ${u.rules.length ? `<ul>${u.rules.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
@@ -91,12 +91,12 @@ function botPanel(v, id, past, items, all) {
   <div class="acts">${past ? '' : `${a.modelHold ? umbraHeld(a) : `<button type="button" class="btn sm ${a.paused ? 'pri' : ''}" data-act="${a.paused ? 'resume' : 'pause'}" data-id="${id}">${a.paused ? 'Resume' : 'Pause'}</button>`}${a.clean > 0 ? `<button type="button" class="btn sm ghost" data-act="revoke" data-id="${id}">Reset trust</button>` : ''}${a.guest ? `<button type="button" class="btn sm ghost" data-act="undock" data-id="${id}">Undock</button>` : ''}`}</div>`;
 }
 
-const RULES = ['Data leaving the company: always.', 'Anything that cannot be undone: always.', '', 'Customer messages: only while a bot is Supervised.'];
+const RULES = ['Data leaving the company: always.', 'Anything that cannot be undone: always.', 'Money over $1,000: always, at every trust level.', '', 'Customer messages: only while a bot is Supervised.'];
 // The Gate panel always states the rules as they are right now, so a change to the limits shows up here too.
 const rulesNow = authority => {
   const r = (WORDS.rules || RULES).slice(), lim = authority.levels.map(l => money(l.limit));
-  r[2] = authority.rules.money ? `Money over the bot's limit: ${lim[0]}, ${lim[1]} or ${lim[2]} by trust level.` : 'Money: no rule. It is switched off right now.';
-  if (!authority.rules.customer) r[3] = r[3].split(':')[0] + ': no rule. It is switched off right now.';
+  r[3] = authority.rules.money ? `Money over the bot's limit: ${lim[0]}, ${lim[1]} or ${lim[2]} by trust earned on money tasks.` : 'Money under $1,000: no rule. It is switched off right now.';
+  if (!authority.rules.customer) r[4] = r[4].split(':')[0] + ': no rule. It is switched off right now.';
   return r;
 };
 

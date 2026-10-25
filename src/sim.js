@@ -36,7 +36,7 @@ export function createSim(seed = 7, opts = {}) {
     t: 0, rng: seed | 0, seq: 0, ord: 0, auto: opts.auto !== false, nextSpawn: 0.6,
     agents: CREW.map((c, i) => ({
       id: c.id, i, state: 'idle', goal: null, at: 'dock', from: null, to: null, p: 0, dur: 0,
-      slot: i, slotFrom: i, task: null, step: 0, work: 0, clean: c.clean, shipped: 0,
+      slot: i, slotFrom: i, task: null, step: 0, work: 0, clean: c.clean, cleanMoney: c.cleanMoney ?? c.clean, shipped: 0,
       mood: 'sleep', say: null, sayT: 0, paused: false,
     })),
     tasks: {}, finished: [], queue: [], approvals: [], incidents: [], log: [],
@@ -70,7 +70,7 @@ export function createSim(seed = 7, opts = {}) {
     if (s.log.length > 240) s.log.shift();
   };
   const name = a => byId[a.id].name;
-  const who = a => ({ name: name(a), clean: a.clean, tools: byId[a.id].tools, cap: byId[a.id].cap });
+  const who = a => ({ name: name(a), clean: a.clean, cleanMoney: a.cleanMoney, tools: byId[a.id].tools, cap: byId[a.id].cap });
   const stepRec = (kind, a, task, extra = null) => {
     steps.push({ o: ++s.ord, t: s.t, kind, agent: a.id, task: task ? task.id : null, ...(extra || {}) });
     if (steps.length > STEPS_MAX) steps.shift();
@@ -251,7 +251,10 @@ export function createSim(seed = 7, opts = {}) {
     s.stats.shipped++; s.stats.spend = Math.round((s.stats.spend + task.cost) * 100) / 100;
     a.shipped++;
     if (task.amount != null) { if (task.approval.needed) s.stats.signed += task.amount; else s.stats.alone += task.amount; }
-    const before = levelOf(a.clean, s.authority).id; a.clean++; const after = levelOf(a.clean, s.authority);
+    const before = levelOf(a.clean, s.authority).id, limBefore = limitOf(who(a), s.authority);
+    a.clean++; if (task.amount != null) a.cleanMoney++;
+    const after = levelOf(a.clean, s.authority), limAfter = limitOf(who(a), s.authority);
+    if (limAfter > limBefore && s.authority.rules.money) log('trust', `${name(a)} may now move up to $${limAfter} alone, earned on money tasks`, a.id);
     fx.push({ type: 'launch', agent: a.id, task: task.id, needed: !!task.approval.needed });
     log('ship', `${name(a)} shipped ${task.id}`, a.id, task.id);
     if (after.id !== before) {
@@ -367,7 +370,7 @@ export function createSim(seed = 7, opts = {}) {
     }
     return { held, freed };
   }
-  function revoke(id) { const a = A(id); if (!a) return false; a.clean = 0; log('revoke', `You reset ${name(a)} to Supervised`, id); record({ agent: id, outcome: 'trust reset', reason: `${name(a)} is back to Supervised`, by: 'person' }); return true; }
+  function revoke(id) { const a = A(id); if (!a) return false; a.clean = 0; a.cleanMoney = 0; log('revoke', `You reset ${name(a)} to Supervised`, id); record({ agent: id, outcome: 'trust reset', reason: `${name(a)} is back to Supervised`, by: 'person' }); return true; }
 
   // Swaps the authority table while the base is running. Work already past the decision point keeps the
   // decision it was given; everything assigned from now on is judged by the new rules.
@@ -393,7 +396,7 @@ export function createSim(seed = 7, opts = {}) {
     const used = new Set(s.agents.filter(a => a.guest).map(a => a.i)); let pad = GUEST_PAD0; while (used.has(pad)) pad++;
     const dur = o.arrive ?? ARRIVE;
     const a = { id: spec.id, i: pad, state: 'arrive', goal: null, at: 'dock', from: null, to: null, p: 0, dur, slot: pad, slotFrom: pad, task: null, step: 0, work: dur,
-      clean: 0, shipped: 0, mood: 'go', say: null, sayT: 0, paused: false, guest: true };
+      clean: 0, cleanMoney: 0, shipped: 0, mood: 'go', say: null, sayT: 0, paused: false, guest: true };
     s.agents.push(a);
     fx.push({ type: 'arrive', agent: a.id });
     return a;

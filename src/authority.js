@@ -19,7 +19,10 @@ export const DEFAULT_AUTHORITY = Object.freeze({
   rules: Object.freeze({ money: true, customer: true }),
 });
 export const LEVELS = DEFAULT_AUTHORITY.levels;
-export const LOCKED = ['data-out', 'irreversible'];
+export const LOCKED = ['data-out', 'irreversible', 'ceiling'];
+// The most any bot may move alone, at any level, with any table, even with the money rule off.
+// High-impact actions keep a hard limit no matter how much trust a bot has earned.
+export const CEILING = 1000;
 
 const int = (v, lo, hi, d) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
 
@@ -31,7 +34,7 @@ export function makeAuthority(p = {}) {
   for (let i = 0; i < base.length; i++) {
     const b = base[i], x = inL.find(l => l && l.id === b.id) || inL[i] || {};
     const min = i === 0 ? 0 : Math.max(out[i - 1].min + 1, int(x.min, 1, 99, b.min));
-    const limit = Math.max(i === 0 ? 0 : out[i - 1].limit, int(x.limit, 0, 5000, b.limit));
+    const limit = Math.max(i === 0 ? 0 : out[i - 1].limit, int(x.limit, 0, CEILING, b.limit));
     out.push({ id: b.id, name: b.name, min, limit });
   }
   const r = p.rules || {};
@@ -60,8 +63,13 @@ export function nextLevel(clean, authority = DEFAULT_AUTHORITY) {
 
 // The money a bot may move alone: its level's limit, or less if the bot arrived with a lower ceiling
 // (`agent.cap`, set where the bot was approved). A cap can only lower the limit, never raise it.
+// Trust to move money is earned on money tasks only. A bot that ships twenty easy tasks has shown
+// nothing about refunds, so its money limit follows `cleanMoney`, the money tasks it shipped without
+// a problem. Agents without that field (older callers) fall back to all tasks shipped.
+export const moneyRuns = agent => agent.cleanMoney != null && Number.isFinite(Number(agent.cleanMoney)) ? Math.max(0, Number(agent.cleanMoney)) : agent.clean;
+
 export function limitOf(agent, authority = DEFAULT_AUTHORITY) {
-  const l = levelOf(agent.clean, authority).limit, cap = Number(agent.cap);
+  const l = levelOf(moneyRuns(agent), authority).limit, cap = Number(agent.cap);
   return agent.cap != null && Number.isFinite(cap) && cap >= 0 ? Math.min(l, cap) : l;
 }
 
@@ -72,6 +80,8 @@ export function needsApproval(task, agent, authority = DEFAULT_AUTHORITY) {
     return { needed: true, rule: 'data-out', reason: 'This sends data outside the company' };
   if (risk.includes('irreversible'))
     return { needed: true, rule: 'irreversible', reason: 'This cannot be undone' };
+  if (task.amount != null && task.amount > CEILING)
+    return { needed: true, rule: 'ceiling', reason: `$${task.amount} is over the $${CEILING} no bot moves alone` };
   if (authority.rules.money && task.amount != null && task.amount > level.limit)
     return { needed: true, rule: 'money', reason: `$${task.amount} is over ${agent.name}'s $${level.limit} limit` };
   if (authority.rules.customer && risk.includes('customer-facing') && level.id === 'supervised')
@@ -87,7 +97,7 @@ export function canUse(agent, tool) {
 //   stop   the tool is not on the bot's badge, so the action must not run
 //   hold   a rule says a person has to say yes first
 //   allow  the bot may go ahead alone
-// `action` is { tool, risk?: string[], amount?: number }. `agent` is { name, clean, tools, cap? }.
+// `action` is { tool, risk?: string[], amount?: number }. `agent` is { name, clean, cleanMoney?, tools, cap? }.
 // This is the only place a decision is made: the simulation, the tests and the Autonomy lab all call it,
 // and it is the function a real agent runtime would call before running a tool.
 export function decide(action, agent, authority = DEFAULT_AUTHORITY) {

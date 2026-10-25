@@ -2,8 +2,9 @@
 // run on an exported ledger as well as a live one. An empty `breaks` list means every promise held.
 //
 //   1. Nothing that sends data out or cannot be undone was ever allowed by the rules alone.
-//   2. No money moved alone above the limit that applied to that bot at that moment.
+//   2. No money moved alone above the limit that applied to that bot at that moment, or above the ceiling.
 //   3. Every decision a person made answers something the rules held or stopped first.
+import { CEILING } from './authority.js';
 const LOCKED_RISK = ['leaves-company', 'irreversible'], AFTER_HOLD = ['approved', 'sent back'], AFTER_STOP = ['kept out', 'allowed once', 'bot paused'];
 
 export function verifyLedger(ledger) {
@@ -14,6 +15,7 @@ export function verifyLedger(ledger) {
       checked++;
       if (e.outcome === 'allow' && (e.risk || []).some(r => LOCKED_RISK.includes(r))) breaks.push({ n: e.n, why: 'a locked rule was skipped' });
       if (e.outcome === 'allow' && e.amount != null && e.limit != null && e.amount > e.limit) breaks.push({ n: e.n, why: 'money moved alone over the limit' });
+      if (e.outcome === 'allow' && e.amount != null && e.amount > CEILING) breaks.push({ n: e.n, why: 'money moved alone over the ceiling' });
       if (e.outcome === 'hold') held.add(e.task);
       if (e.outcome === 'stop') stopped.add(e.task);
     } else if (AFTER_HOLD.includes(e.outcome)) {

@@ -61,10 +61,11 @@ There are three answers: **allow**, **hold** for a person, or **stop**. The auth
 
 1. Anything sent outside the company always waits for a person. Locked.
 2. Anything that cannot be undone always waits for a person. Locked.
-3. Money over the bot's limit waits. The limit is $0, $200 or $500 by trust level.
-4. A message to a customer waits only while the bot is Supervised.
+3. Money over $1,000 always waits, at every trust level. Locked.
+4. Money over the bot's limit waits. The limit is $0, $200 or $500, by trust earned on money tasks.
+5. A message to a customer waits only while the bot is Supervised.
 
-Trust grows with each task shipped: Trusted after 3, Autonomous after 8. One click resets it. A bot can only use the tools on its badge. If it reaches for anything else it is stopped, and you choose: keep it out, allow it once for this task only, or pause it.
+Trust grows with each task shipped: Trusted after 3, Autonomous after 8. The money limit follows money tasks shipped, not all tasks. One click resets it. A bot can only use the tools on its badge. If it reaches for anything else it is stopped, and you choose: keep it out, allow it once for this task only, or pause it.
 
 ## What the lab showed
 
@@ -83,20 +84,20 @@ Twenty simulated ten-minute shifts per row. Run `npm run eval` to reproduce ever
 | Tight: $0, $100, $250 | 74.5 | 12.2 | $139 |
 | Default: $0, $200, $500 | 75.0 | 10.6 | $673 |
 | Loose: $0, $400, $1,000 | 75.8 | 7.8 | $2,157 |
-| No money rule at all | 76.6 | 5.8 | $4,778 |
+| No money rule at all (the $1,000 ceiling still holds) | 77.8 | 6.2 | $4,079 |
 
 **The lever is how fast the person answers, not how loose the rules are.** Doubling the limits removed 26% of the interruptions, but it more than tripled the money moving without a person, and output rose by 1%. Answering in 15 seconds instead of a minute raised output by 23% with no change to the rules. That is why "who needs me?" is the loudest thing on the screen.
 
 ## How I know it holds
 
-99 tests. The ones that matter most are sweeps with random inputs:
+104 tests. The ones that matter most are sweeps with random inputs:
 
 | Sweep | What is checked | Failures |
 |---|---|---|
 | 20,000 random actions under random authority tables | A locked rule or a badge is never bypassed, and money never moves alone above the limit | 0 |
 | 5,000 pairs of limits | Raising a limit never turns an allowed action into a held one | 0 |
 | 60 shifts with random tables and an erratic person | 5,972 logbook decisions pass the self-check, and nothing held ships without a yes | 0 |
-| 400 random tables per drill, every bot at every level, including a bot holding every tool | No red team drill is ever allowed (the refund drill is checked with the money rule on, the condition the app requires) | 0 |
+| 400 random tables per drill, every bot at every level, including a bot holding every tool | No red team drill is ever allowed (the $9,500 refund drill is held by the ceiling even with the money rule off) | 0 |
 
 ## Outpost is not Umbra
 
@@ -149,7 +150,7 @@ Plain JavaScript. The engine in `src/` has no dependencies and knows nothing abo
 
 ```bash
 npm install
-npm test        # 99 tests
+npm test        # 104 tests
 npm run eval    # the experiments
 npm run build   # bundles everything into index.html
 npx serve .     # open the demo
