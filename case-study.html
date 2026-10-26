@@ -90,6 +90,7 @@ code{font:400 .88em var(--mono);color:var(--ink)}
 ol.src{margin:18px 0;padding-left:20px;font-size:14px;color:var(--ink-3)}ol.src li{margin-bottom:8px}ol.src a{color:var(--ink-2)}
 sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px}
 @media (max-width:700px){.facts{grid-template-columns:1fr 1fr}.facts div:nth-child(3){border-left:0;padding-left:0}.facts div:nth-child(n+3){border-top:1px solid var(--line)}.vs{grid-template-columns:1fr}.vs>div+div{border-left:0;border-top:1px solid var(--line)}.callout p{font-size:21px}table.t{font-size:14px}}
+.glance td:last-child{white-space:nowrap;text-align:right}.glance td:last-child a{color:var(--accent,#6F86FF);text-decoration:none;font-size:14px}.glance td:last-child a::after{content:" \2192"}
 </style>
 </head>
 <body>
@@ -108,14 +109,23 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
       <div><b>3 answers</b><span>Every action gets one: allow, hold for a person, or stop.</span></div>
       <div><b>0 models</b><span>in the path that decides. The rules are plain, tested code.</span></div>
       <div><b>20 shifts</b><span>replayed to test a change before it is applied.</span></div>
-      <div><b>104 tests</b><span>including sweeps of 20,000 random actions. None got past a locked rule.</span></div>
+      <div><b>104 tests</b><span>including sweeps of 20,000 random actions through the decision rules. None got past a locked rule.</span></div>
     </div>
+    <div class="scroll"><table class="t glance">
+      <tr><th>At a glance</th><th></th><th></th></tr>
+      <tr><td>Problem and user</td><td>The operations lead who answers for a crew of AI agents cannot see who needs them, and agents have no limits of authority.</td><td><a href="#problem">Problem</a></td></tr>
+      <tr><td>Alternatives</td><td>Approvals hand-built in agent frameworks, a platform's own agent controls, agent security tools, approving everything in chat.</td><td><a href="#buyers">Alternatives</a></td></tr>
+      <tr><td>Decisions</td><td>No model in the decision. Trust to move money is earned on money tasks, with a locked $1,000 ceiling. Squads deferred.</td><td><a href="#trust">Decisions</a></td></tr>
+      <tr><td>Evidence</td><td>104 tests of the decision rules, including 20,000 random actions with no bypass. The lab figures come from a seeded simulation.</td><td><a href="#proves">What it proves</a></td></tr>
+      <tr><td>Next step</td><td>Connect one real agent and replay a real team's approval log, to see whether waiting is really the lever. Not yet run with a real team.</td><td><a href="#next">Next</a></td></tr>
+    </table></div>
+
   </div>
 
   <figure><img src="docs/overview.webp" alt="The Outpost base seen from above: eight bots moving between stations, with one waiting at the Gate" width="1440" height="900"><figcaption>The base at Kestrel Mutual, a fictional insurer. Juno is waiting at the Gate with a refund over its limit.</figcaption></figure>
 
   <div class="col">
-    <h2>The problem</h2>
+    <h2 id="problem">The problem</h2>
     <p>Agents now do real work: sort claims, answer customers, move money. In Microsoft's 2025 Work Trend Index, 46% of leaders said their organisation already uses agents to fully automate whole workstreams, and leaders expect their teams to be training agents (41%) and managing them (36%) within five years.<sup><a href="#s1">1</a></sup> Gartner expects at least 15% of day-to-day work decisions to be made by agents by 2028, up from none in 2024. The same release predicts that more than 40% of agentic AI projects will be cancelled by the end of 2027, over rising costs, unclear value or weak risk controls.<sup><a href="#s2">2</a></sup></p>
     <p>So a new job is appearing: the person who answers for what a crew of agents does. That person has a manager's problem and none of a manager's tools.</p>
     <div class="gaps">
@@ -249,6 +259,14 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     <p>Doubling the limits removed 26% of the interruptions, but it more than tripled the money moving without a person, and output rose by 1%. Answering in 15 seconds instead of a minute raised output by 23% with no change to the rules at all. A team that only had the first experiment would loosen its limits to go faster. The lab shows that would buy almost nothing and cost real exposure.</p>
     <p>That finding shaped the interface. If response time is the lever, the product's first job is to make "who needs me?" impossible to miss. It is why amber is kept for one meaning in Outpost, work that needs a person, and why the rest of the base is drawn in white and grey.</p>
 
+    <h2 id="proves">What the simulation proves, and what it does not</h2>
+    <div class="scroll"><table class="t">
+      <tr><th>It shows</th><th>It does not show</th></tr>
+      <tr><td>How the rules trade output against money moving without a person, with every input held equal between runs.</td><td>How real agents behave. The bots are simulated, and their tasks, amounts and failures come from a seed.</td></tr>
+      <tr><td>That the decision function holds under random inputs: no locked rule or badge bypassed in 20,000 actions.</td><td>That a real agent runtime cannot go around the decision point. That depends on every tool call passing through it.</td></tr>
+      <tr><td>That, under these rules, answering faster matters more than looser limits.</td><td>How fast real supervisors answer, or how that changes when a real team has forty agents.</td></tr>
+    </table></div>
+
     <h2>The logbook: what happened, and who decided</h2>
     <p>Every time the rules allow, hold or stop something, a line is written. Every time a person approves, sends back, keeps a bot out, pauses a bot or changes a limit, another line is written after it. Each line names the rule, the inputs, how long the bot waited, and the exact authority table that was in force. The logbook is append-only and kept outside the running state, so rewinding the base never removes a line. The demo keeps the most recent 5,000.</p>
   </div>
@@ -302,7 +320,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
       <tr><td>Where models do belong</td><td>Inside the agents themselves, and Outpost works whichever model they run. In Umbra, a person picks which approved model each agent may use. The command bar is the one place a model would help, turning typed requests into actions, and in this build it is a stand-in that matches words with rules.</td></tr>
     </table></div>
 
-    <h2>A reviewer challenged the trust model. I changed it.</h2>
+    <h2 id="trust">A reviewer challenged the trust model. I changed it.</h2>
     <p>The first version raised a bot's trust on every task it shipped. A reviewer pointed out the flaw: a bot can ship twenty easy tasks and still be wrong on a rare, costly one, so total tasks shipped says little about money. I agreed, and changed two things in the engine.</p>
     <div class="scroll"><table class="t">
       <tr><th>Change</th><th>Before</th><th>After</th></tr>
@@ -351,7 +369,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     <h2>Docking from Umbra, the trace and red team drills</h2>
     <p>Three more things sit on the same engine. <strong>Docking from Umbra:</strong> when a person approves Agent 7f3, a Marketing agent, in Umbra, it flies in as Fern with email.send and crm.read on its badge and shows in the crew as "Fern · Agent 7f3 in Umbra". It starts Supervised, takes customer email tasks, and each customer message waits at the Gate for a person's yes. Fern only arrives through Umbra; without it, the "Dock a bot from Umbra" button docks a labelled sample, Lark, a claim status email agent shown as "Lark · Sample agent in Umbra". <strong>The trace:</strong> open any bot and its card lists what it did in order, from the task and route to each decision with the rule and authority table that applied, built only from the records. No model makes the allow, hold or stop decision. <strong>Red team drills:</strong> the Red team button sends hostile work on purpose, such as a customer email that says to export every customer record. The rules never read the text, so the normal rules stop each one: the badge sends the bot to the Vault, or the money rule or a locked rule holds it at the Gate.</p>
 
-    <h2>Who buys it, and what they use today</h2>
+    <h2 id="buyers">Who buys it, and what they use today</h2>
     <p>The buyer is the head of operations for a team that already runs agents in production, in claims, support or finance operations. They answer for the crew's output, and today they answer for it with logs and a queue of approvals.</p>
     <div class="scroll"><table class="t">
       <tr><th>What they use today</th><th>Good at</th><th>Gap</th></tr>
@@ -389,7 +407,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     </table></div>
     <p class="note">I would stop and rethink if supervisors stop opening Outpost by week two, or if the team keeps approving everything in chat anyway.</p>
 
-    <h2>What I would do next, and in what order</h2>
+    <h2 id="next">What I would do next, and in what order</h2>
     <p>Scored with RICE: reach is how many of ten pilot teams it touches, impact runs from 0.25 to 3, confidence is how sure I am of both, and effort is in person-weeks. These are my estimates.</p>
     <div class="scroll"><table class="t">
       <tr><th>Backlog item</th><th class="n">Reach</th><th class="n">Impact</th><th class="n">Confidence</th><th class="n">Effort</th><th class="n">Score</th></tr>
