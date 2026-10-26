@@ -113,11 +113,12 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     </div>
     <div class="scroll"><table class="t glance">
       <tr><th>At a glance</th><th></th><th></th></tr>
-      <tr><td>Problem and user</td><td>The operations lead who answers for a crew of AI agents cannot see who needs them, and agents have no limits of authority.</td><td><a href="#problem">Problem</a></td></tr>
+      <tr><td>Problem and user</td><td>The operations lead who answers for a crew of AI agents cannot see who needs them, and the agents have no limits of authority.</td><td><a href="#problem">Problem</a></td></tr>
       <tr><td>Alternatives</td><td>Approvals hand-built in agent frameworks, a platform's own agent controls, agent security tools, approving everything in chat.</td><td><a href="#buyers">Alternatives</a></td></tr>
       <tr><td>Decisions</td><td>No model in the decision. Trust to move money is earned on money tasks, with a locked $1,000 ceiling. Squads deferred.</td><td><a href="#trust">Decisions</a></td></tr>
       <tr><td>Evidence</td><td>104 tests of the decision rules, including 20,000 random actions with no bypass. The lab figures come from a seeded simulation.</td><td><a href="#proves">What it proves</a></td></tr>
-      <tr><td>Next step</td><td>Connect one real agent and replay a real team's approval log, to see whether waiting is really the lever. Not yet run with a real team.</td><td><a href="#next">Next</a></td></tr>
+      <tr><td>What is proven</td><td>Proven: the decision rules hold, in 104 tests. Heard in five conversations: approval should follow impact and reversibility, and rebuilding what happened and handing off a stuck case are real gaps. Still assumed: that teams would buy a separate tool rather than build these controls themselves.</td><td><a href="#assumptions">Assumptions</a></td></tr>
+      <tr><td>Next step</td><td>Pick the narrower first product discovery points to (approval, handoff or audit trail), then connect one real agent. No users yet.</td><td><a href="#next">Next</a></td></tr>
     </table></div>
 
   </div>
@@ -136,15 +137,27 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     </div>
     <p>These are operations problems, not security ones. The question is not "is this AI allowed in the building?" It is "the agents we chose are working right now. What needs me?"</p>
 
-    <h2>What I am assuming, and how I would test it</h2>
-    <p>Outpost is a personal project. The crew is simulated and nobody runs it at work. These are the bets underneath it, the first test for each, and the result that would change the product.</p>
+    <h2 id="assumptions">What I am assuming, and how I would test it</h2>
+    <p>Outpost is a personal project with no users yet. The crew is simulated. These are the bets underneath it, the first test for each, and the result that would change the product.</p>
     <div class="scroll"><table class="t">
       <tr><th>Assumption</th><th>How I would test it</th><th>What would change my mind</th></tr>
-      <tr><td>Someone outside engineering answers for what a crew of agents does.</td><td>Five interviews with teams that run agents in production, in support, claims or finance operations. Ask who approves risky actions today and who is blamed when one goes wrong.</td><td>Approvals sit with the engineers who built the agents. Then the buyer is a developer, and Outpost should be a library with a console, not a control room.</td></tr>
+      <tr><td>Someone outside engineering answers for what a crew of agents does.</td><td>Five more interviews with teams that run agents in production, starting with insurance claims. Ask who approves risky actions today and who is blamed when one goes wrong.</td><td>Approvals sit with the engineers who built the agents. Then the buyer is a developer, and Outpost should be a library with a console, not a control room.</td></tr>
       <tr><td>In real crews, waiting for a person costs more output than tight limits do.</td><td>Replay one team's real approval log through the lab and compare time spent waiting with work held by limits.</td><td>Real people answer within seconds. Then the lever is the limits, and the lab should lead with them.</td></tr>
       <tr><td>A spatial view finds a waiting bot faster than a list.</td><td>A timed task with eight people: spot the bot that needs you, once in the 3D base and once in the list.</td><td>The scene is not faster. Then the list becomes the default view and the base becomes optional.</td></tr>
       <tr><td>Teams would raise limits only with evidence.</td><td>In a pilot, watch whether limit changes go through the lab first or are made directly.</td><td>Nobody uses the lab before changing a limit. Then it needs to be part of the change itself, not a separate screen.</td></tr>
     </table></div>
+
+    <h3>What I heard in five conversations</h3>
+    <p>Five people from my MBA and professional network: an operations manager who owns an automated workflow, an engineer running LLM agents, an operations director weighing agents, a support operations lead and an enterprise security architect. These are my summaries of the conversations, not quotes.</p>
+    <div class="scroll"><table class="t">
+      <tr><th>What I heard</th><th>What it changed</th></tr>
+      <tr><td><strong>Approval should follow the damage a mistake can do, and whether it can be undone.</strong> An engineer added a person's approval to outbound messages after an agent tried to send one before a verification step.</td><td>Supports limits of authority, and the locked rule that holds any action that cannot be undone.</td></tr>
+      <tr><td><strong>Business rules are the hard part.</strong> Systems can restrict access, but "allow a refund under this amount only if the order meets these conditions" is hard to express.</td><td>Supports the authority table, which is built for rules like that.</td></tr>
+      <tr><td><strong>Rebuilding what happened takes hours.</strong> One team traced timestamps and job IDs across several logs to find which records an automation had changed.</td><td>Confirms the logbook, and makes an audit trail a candidate entry point.</td></tr>
+      <tr><td><strong>Handoffs lose context.</strong> A stuck refund sat in a queue, and the person who took it over had no summary of what had already been checked.</td><td>Handoff is not in Outpost today. It is a candidate entry point.</td></tr>
+      <tr><td><strong>Trust is earned on evidence.</strong> A team kept a person on final review until it could measure how often the agent missed exceptions and reverse a bad action.</td><td>Supports earned trust, and testing a limit change in the lab before it is applied.</td></tr>
+    </table></div>
+    <p><strong>What it changes:</strong> I would test a narrower first product before the full control room: approval for risky actions, a handoff when an agent stops, or an audit-ready record. <strong>Still unknown:</strong> whether teams would buy a separate tool rather than build these controls into their own agent framework or workflow engine. The next round adds two questions on money: what they spend today on approvals, monitoring and incident cleanup, and who signs off on tooling for agents.</p>
 
     <h2>What Outpost gives that person</h2>
     <div class="scroll"><table class="t">
@@ -370,7 +383,8 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     <p>Three more things sit on the same engine. <strong>Docking from Umbra:</strong> when a person approves Agent 7f3, a Marketing agent, in Umbra, it flies in as Fern with email.send and crm.read on its badge and shows in the crew as "Fern · Agent 7f3 in Umbra". It starts Supervised, takes customer email tasks, and each customer message waits at the Gate for a person's yes. Fern only arrives through Umbra; without it, the "Dock a bot from Umbra" button docks a labelled sample, Lark, a claim status email agent shown as "Lark · Sample agent in Umbra". <strong>The trace:</strong> open any bot and its card lists what it did in order, from the task and route to each decision with the rule and authority table that applied, built only from the records. No model makes the allow, hold or stop decision. <strong>Red team drills:</strong> the Red team button sends hostile work on purpose, such as a customer email that says to export every customer record. The rules never read the text, so the normal rules stop each one: the badge sends the bot to the Vault, or the money rule or a locked rule holds it at the Gate.</p>
 
     <h2 id="buyers">Who buys it, and what they use today</h2>
-    <p>The buyer is the head of operations for a team that already runs agents in production, in claims, support or finance operations. They answer for the crew's output, and today they answer for it with logs and a queue of approvals.</p>
+    <p>The buyer is the head of operations for a team that already runs agents in production. The first segment I would test is claims at a mid-sized insurer: clear money limits, a regulator who asks who approved what, and a steady flow of small decisions worth delegating. My first five conversations did not include claims, so this is a choice to test, not a finding. Today this person answers for the crew's output with logs and a queue of approvals.</p>
+    <p><strong>What they need from it:</strong> when an agent is stuck on a decision only they can make, see it and answer in seconds, without digging through logs.</p>
     <div class="scroll"><table class="t">
       <tr><th>What they use today</th><th>Good at</th><th>Gap</th></tr>
       <tr><td>Approvals built into an agent framework (LangGraph interrupts, or a tool that asks before it runs)</td><td>Free, and close to the code. Engineers can pause any step for a person.</td><td>Every approval is hand-built. No limits that grow with trust, no shared view of who is waiting, and no way to test a change first.</td></tr>
@@ -397,7 +411,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
     </ul>
 
     <h2>How I would measure success</h2>
-    <p>Targets for a pilot with one team's crew. None of these have been measured with a real team.</p>
+    <p>Targets for a pilot with one claims team's crew. None of these have been measured with a real team. <strong>The pilot's one goal:</strong> more work done per supervisor, with no action ever getting past its limit. The four measures below show whether it happened.</p>
     <div class="scroll"><table class="t">
       <tr><th>Metric</th><th>Role</th><th>Target</th><th>Why this number</th></tr>
       <tr><td>Tasks shipped per supervisor hour</td><td>North star</td><td>Up 20% on the team's current process</td><td>The point is more output per person, with every risky action still accounted for.</td></tr>
@@ -418,6 +432,7 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
       <tr><td>Squads for crews of eighty<small>Eight bots read well. Eighty will not. Squads you can open, each with its own authority table.</small></td><td class="n">2</td><td class="n">2</td><td class="n">50%</td><td class="n">6</td><td class="n">0.3</td></tr>
     </table></div>
     <p><strong>Deferred on purpose: squads.</strong> It is the most visible feature on the list, and almost no pilot team runs eighty agents yet. I would build it when one does. <strong>Not on the list at all:</strong> a model that makes the allow, hold or stop decision. It would make a good demo and would break the promise that the same action always gets the same answer.</p>
+    <p><strong>The cheaper test I would run first.</strong> I built Outpost before testing it with a team. The smaller first test would have been to take one team's approval log and measure, by hand, how long agents wait for a yes. If the wait is short, the case for the base and the lab is weak. It is still the first thing I would do now.</p>
 
     <h2>Sources</h2>
     <ol class="src">
