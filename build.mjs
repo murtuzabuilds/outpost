@@ -13,10 +13,16 @@ const js = r.outputFiles[0].text;
 const e = await build({ ...common, entryPoints: ['app/embed.js'], globalName: '__OP' });
 const embedJs = `window.__opMount=function(host,opts){${e.outputFiles[0].text}\nreturn __OP.mount(host,opts);};\n`;
 const fonts = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@400..700&family=Geist:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap';
+// three.js is served from this repo (vendor/), so the base works on networks that block CDNs.
+// If the local copy is missing, the page falls back to the public CDN.
+const CDN3 = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+const CDNO = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
 const libs = [
-  'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
-  'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js',
-].map(u => `<script src="${u}"></script>`).join('\n');
+  '<script src="vendor/three.min.js"></script>',
+  `<script>window.THREE||document.write('<script src="${CDN3}"><\\/script>')</script>`,
+  '<script src="vendor/OrbitControls.js"></script>',
+  `<script>window.THREE&&THREE.OrbitControls||document.write('<script src="${CDNO}"><\\/script>')</script>`,
+].join('\n');
 
 const page = `<title>Outpost</title>
 <link rel="stylesheet" href="${fonts}">
