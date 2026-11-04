@@ -92,6 +92,10 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
 @media (max-width:700px){.facts{grid-template-columns:1fr 1fr}.facts div:nth-child(3){border-left:0;padding-left:0}.facts div:nth-child(n+3){border-top:1px solid var(--line)}.vs{grid-template-columns:1fr}.vs>div+div{border-left:0;border-top:1px solid var(--line)}.callout p{font-size:21px}table.t{font-size:14px}}
 .glance td:last-child{white-space:nowrap;text-align:right}.glance td:last-child a{color:var(--accent,#6F86FF);text-decoration:none;font-size:14px}.glance td:last-child a::after{content:" \2192"}
 </style>
+<style>/* no single word left alone on the last line */
+h1,h2,h3,h4{text-wrap:balance}
+p,li,dd,td,figcaption,blockquote,.lede{text-wrap:pretty}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -447,5 +451,9 @@ sup a{color:#AEBBFF;text-decoration:none;font:400 11px var(--mono);padding:0 1px
 
   <footer><span>Designed and built by Murtuza.</span><span>Interactive demo · sample data. Fictional company, simulated bots.</span></footer>
 </div>
+<script>/* keep the last two words of a paragraph, cell or heading together, so no single word sits alone on the last line */
+(function(){var run=function(){document.querySelectorAll('p,li,dd,td,figcaption,blockquote,h2,h3').forEach(function(e){if(e.closest('svg,pre,code,[contenteditable]'))return;var w=document.createTreeWalker(e,NodeFilter.SHOW_TEXT),n,last=null;while(n=w.nextNode()){if(/\S/.test(n.textContent))last=n}
+if(!last||(e.textContent||'').trim().split(/\s+/).length<4)return;var t=last.textContent,m=t.match(/^([\s\S]*?)(\S+) (\S+\s*)$/);if(m&&(m[2]+m[3]).trim().length<=24)last.textContent=m[1]+m[2]+' '+m[3];});};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();addEventListener('load',function(){run();setTimeout(run,1500);});})();</script>
 </body>
 </html>
